@@ -9,6 +9,7 @@ Do not put platform specific files in this repository. Only source files (.c/.h,
 Video files should not be included (possible limit of repository size by github)
 
 Infrastructural requirements:
+ - API to create a trackbar on a specified matrix/window, parameters should be "window name, variable to control, min/max value, init value
  - Adding FPS on matrices (create an wrapper API for imshow that filters and calculates frame rate, can be a sliding window average)
  - Create API to get frame (kinda like how the other group was doing get x frame from x # of frames in this video)
  - Create platform specific headers for opencv_windows and opencv_linux for any differences (or other opencv version-specific function calls)
