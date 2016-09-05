@@ -55,4 +55,6 @@ void helper_startCounter(idkDataType_S * counterStructPtr);
 // Call this after the section where you want to track the total CPU usage of
 void helper_stopCounter(idkDataType_S * counterStructPtr);
 
+//crops main image
+void helper_cropImage(Mat * inputImage, Mat * croppedImage);
 #endif /* HELPER_OPENCV_HPP_ */
