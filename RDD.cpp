@@ -42,7 +42,8 @@ int main( int argc, char** argv )
 
 	while (1)
 	{
-		static Mat im;
+		static Mat inputImage;
+		static Mat croppedImage;
 		static bool updateImage = false;
 		static bool start = true;
 		bool validDiff = false;
@@ -51,7 +52,8 @@ int main( int argc, char** argv )
 
 		if (updateImage || start)
 		{
-			capture.read(im);
+			capture.read(inputImage);
+			helper_cropImage(&inputImage, &croppedImage);
 			start = false;
 			counter++;
 			static Mat prev_grey_image;
@@ -62,7 +64,7 @@ int main( int argc, char** argv )
 			{
 				Mat contours_drawing;
 				Mat threshold_diff;
-				cvtColor(im, curr_grey_image, CV_BGR2GRAY);
+				cvtColor(croppedImage, curr_grey_image, CV_BGR2GRAY);
 				if (prev_grey_image.size().height > 0)
 				{
 					validDiff = true;
@@ -95,8 +97,9 @@ int main( int argc, char** argv )
 
 			}
 
-			// Show Image
-			imshow("image", im );
+			// Show Images
+			imshow("Input Image", inputImage);
+			imshow("Cropped Image", croppedImage);
 
 			// And differences
 			if (validDiff)
