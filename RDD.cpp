@@ -1,4 +1,5 @@
 #include "opencv2/opencv.hpp"
+#include "helper_opencv.hpp"
 
 using namespace cv;
 using namespace std;
@@ -19,6 +20,26 @@ int main( int argc, char** argv )
 		printf("uh oh?\n");
 		return false;
 	}
+
+	static int greyThreshold = 40;
+	const int greyThresholdMax = 200;
+	string trackbarThresholdName = "Grey Threshold Trackbar";
+	string windowName_GreyThreshold = "Grey Threshold";
+
+	static int greyDiffInterval = 9;
+	const int greyDiffMax = 50;
+	string trackbarGreyDiffName = "Grey Diff Trackbar";
+	string windowName_GreyDiff = "Grey Diff";
+
+	namedWindow(windowName_GreyThreshold);
+	moveWindow(windowName_GreyThreshold, 100, 100);
+	helper_trackbarSimple(trackbarThresholdName, windowName_GreyThreshold, &greyThreshold, greyThresholdMax);
+
+	namedWindow(windowName_GreyDiff);
+	moveWindow(windowName_GreyDiff, 100, 100);
+	helper_trackbarSimple(trackbarGreyDiffName, windowName_GreyDiff, &greyDiffInterval, greyDiffMax);
+
+
 	while (1)
 	{
 		static Mat im;
@@ -26,7 +47,6 @@ int main( int argc, char** argv )
 		static bool start = true;
 		bool validDiff = false;
 		static uint32_t counter = 0;
-		static uint8_t sampleInterval = 3; ///< Every sampleInterval frames we will grab one frame
 
 
 		if (updateImage || start)
@@ -38,11 +58,10 @@ int main( int argc, char** argv )
 			static Mat curr_grey_image;
 			static Mat diff_grey_image;
 			vector<vector<Point> > contours;
-			if (!(counter % sampleInterval))
+			if (!(counter % greyDiffInterval))
 			{
 				Mat contours_drawing;
 				Mat threshold_diff;
-				curr_grey_image.copyTo(prev_grey_image);
 				cvtColor(im, curr_grey_image, CV_BGR2GRAY);
 				if (prev_grey_image.size().height > 0)
 				{
@@ -54,24 +73,25 @@ int main( int argc, char** argv )
 					vector<Vec4i> hierarchy;
 
 					diff_grey_image.copyTo(threshold_diff);
-					threshold(threshold_diff, threshold_diff, 25, 200, THRESH_BINARY);
+					threshold(threshold_diff, threshold_diff, greyThreshold, greyThresholdMax, THRESH_BINARY);
 					threshold_diff.copyTo(contours_drawing);
 					findContours(contours_drawing, contours, hierarchy,
 						CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
 					int idx = 0;
 					for( ; idx >= 0; idx = hierarchy[idx][0] )
 					{
-						Scalar color( rand()&255, rand()&255, rand()&255 );
+						Scalar color(255, 255, 255);
 						drawContours( contours_drawing, contours, idx, color, CV_FILLED, 8, hierarchy );
 					}
 
 					if (!contours_drawing.empty())
 					{
-						imshow("Threshold diff", threshold_diff);
+						imshow(windowName_GreyThreshold, threshold_diff);
 						imshow("Contours", contours_drawing);
 					}
 
 				}
+				curr_grey_image.copyTo(prev_grey_image);
 
 			}
 
@@ -83,7 +103,7 @@ int main( int argc, char** argv )
 			{
 				imshow("prev grey", prev_grey_image);
 				imshow("curr grey", curr_grey_image);
-				imshow("diff grey image", diff_grey_image);
+				imshow(windowName_GreyDiff, diff_grey_image);
 			}
 
 		}
