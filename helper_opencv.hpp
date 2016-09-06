@@ -57,4 +57,8 @@ void helper_stopCounter(idkDataType_S * counterStructPtr);
 
 //crops main image
 void helper_cropImage(Mat * inputImage, Mat * croppedImage);
+
+// creates ellipses around contours
+void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage);
+
 #endif /* HELPER_OPENCV_HPP_ */

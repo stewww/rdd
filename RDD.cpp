@@ -4,12 +4,6 @@
 using namespace cv;
 using namespace std;
 
-
-static void trackbarCb(int, void *)
-{
-	;
-}
-
 int main( int argc, char** argv )
 {
 	VideoCapture capture;
@@ -63,6 +57,7 @@ int main( int argc, char** argv )
 			if (!(counter % greyDiffInterval))
 			{
 				Mat contours_drawing;
+				Mat contoursAndEllipse;
 				Mat threshold_diff;
 				cvtColor(croppedImage, curr_grey_image, CV_BGR2GRAY);
 				if (prev_grey_image.size().height > 0)
@@ -70,28 +65,19 @@ int main( int argc, char** argv )
 					validDiff = true;
 					absdiff(prev_grey_image, curr_grey_image, diff_grey_image);
 
-
-					vector<vector<Point> > contours;
-					vector<Vec4i> hierarchy;
-
 					diff_grey_image.copyTo(threshold_diff);
 					threshold(threshold_diff, threshold_diff, greyThreshold, greyThresholdMax, THRESH_BINARY);
-					threshold_diff.copyTo(contours_drawing);
-					findContours(contours_drawing, contours, hierarchy,
-						CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
-					int idx = 0;
-					for( ; idx >= 0; idx = hierarchy[idx][0] )
-					{
-						Scalar color(255, 255, 255);
-						drawContours( contours_drawing, contours, idx, color, CV_FILLED, 8, hierarchy );
-					}
 
-					if (!contours_drawing.empty())
+					if (!threshold_diff.empty())
 					{
 						imshow(windowName_GreyThreshold, threshold_diff);
+						threshold_diff.copyTo(contours_drawing);
+						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse);
 						imshow("Contours", contours_drawing);
+						moveWindow("Contours", 100, 100);
+						imshow("Contours and Ellipses", contoursAndEllipse);
+						moveWindow("Contours and Ellipses", 1000, 500);
 					}
-
 				}
 				curr_grey_image.copyTo(prev_grey_image);
 
@@ -100,6 +86,7 @@ int main( int argc, char** argv )
 			// Show Images
 			imshow("Input Image", inputImage);
 			imshow("Cropped Image", croppedImage);
+			moveWindow("Cropped Image", 0, 500);
 
 			// And differences
 			if (validDiff)
