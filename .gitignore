@@ -5,6 +5,6 @@ Debug/*
 ipch/
 rdd.VC.VC.opendb
 rdd.VC.db
-testvid01.mp4
+*.mp4
 x64/
 rdd.sln
