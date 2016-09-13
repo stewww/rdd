@@ -1,17 +1,14 @@
 /*
  * run_timer_test.cpp
  *
- *  Created on: Sep 6, 2016
- *      Author: jonathan arroyo
- *
- *      Testing functionality of run_timer.h.
+ *  Created on: Sep 12, 2016
+ *      Author: jonathan
  */
 
-#include <iostream>
-#include "run_timer.h"
-using namespace std;
+#include "run_timer_test.h"
 
-int run_timer_test() {
+int run_timer_test()
+{
 	cout << "_____MAIN_START_____TESTING_RUN_TIMES_____" << endl;
 
 	/* Use three for-loops to time the following three tasks:
@@ -25,58 +22,57 @@ int run_timer_test() {
 	*/
 
 //(1)
-	cout << endl << endl << "== Run time to initialize ints a&b ==" << endl;
+	cout << endl << endl << "== Run time to initialize ints a&b 10^9 times ==" << endl;
+	int a, b = 0;
 	run_timer timeToInit2IntsAB;
-	for(int i = 0; i < 3; i++) { //run the task 3 times
-		timeToInit2IntsAB.start(); //start timer
-		int a=2, b=3;
-		timeToInit2IntsAB.stop(); //stop timer
-		int taskOneTime = timeToInit2IntsAB.get_this_run_time(); //get_this_run_time()
-		cout << "(" << i+1 << ")Time to store a&b: " << taskOneTime << "ms." << endl; //cout above's value
-		timeToInit2IntsAB.print_this_run_time(); //print_this_run_time(). Should equal above's output.
-		cout << endl;
+	timeToInit2IntsAB.start();
+	for(int i = 0; i < 1000000000; i++) { //run the task 10^9 times
+		a=i, b=i+1;
 	}
-	int functionOneTimeAverage = timeToInit2IntsAB.get_average_run_time(); //get_average_run_time().
-	cout << "-- Average time to initialize int a&b: [" << functionOneTimeAverage << "ms] --" << endl; //check average
+	timeToInit2IntsAB.stop();
+	cout << "a=" << a << endl << "b=" << b << endl;
+	int loopOneTimeAverage = timeToInit2IntsAB.get_average_run_time(); //get_average_run_time().
+	cout << "-- Average time to initialize int a&b: [" << loopOneTimeAverage << "ms] --" << endl; //check average
 	//print_average_run_time() is called after all functions are timed.
+	timeToInit2IntsAB.print_this_run_time();
+	timeToInit2IntsAB.print_average_run_time();
+
 
 //(2)
-	cout << endl << endl << "== Run time to initialize int c==" << endl;
-	run_timer timeToInit1IntC;
-	for(int j = 0; j < 3; j++) { //run the task 3 times
-		timeToInit1IntC.start(); //start timer
-		int c = 2;
-		timeToInit1IntC.stop(); //stop timer
-		int taskTwoTime = timeToInit1IntC.get_this_run_time(); //get_this_run_time()
-		cout << "(" << j+1 << ")Time to store c: " << taskTwoTime << "ms." << endl; //cout above's value
-		timeToInit1IntC.print_this_run_time(); //print_this_run_time().
-		cout << endl;
+	cout << endl << endl << "== Run time to initialize ints c&d 10^9 times ==" << endl;
+	int c, d = 0;
+	run_timer timeToInit2IntsCD;
+	timeToInit2IntsCD.start();
+	for(int i = 0; i < 1000000000; i++) { //run the task 10^9 times
+		c=i, d=i+1;
 	}
-	int functionTwoTimeAverage = timeToInit1IntC.get_average_run_time(); //get_average_run_time().
-	cout << "-- Average time to initialize int c: [" << functionTwoTimeAverage << "ms] --" << endl; //check average
+	timeToInit2IntsCD.stop();
+	cout << "c=" << c << endl;
+	cout << "d=" << d << endl;
+	int loopTwoTimeAverage = timeToInit2IntsCD.get_average_run_time(); //get_average_run_time().
+	cout << "-- Average time to initialize int c&d: [" << loopTwoTimeAverage << "ms] --" << endl; //check average
+	//print_average_run_time() is called after all functions are timed.
+	timeToInit2IntsCD.print_this_run_time();
+	timeToInit2IntsCD.print_average_run_time();
 
 //(3)
-	cout << endl << endl << "== Run time to initialize int d ==" << endl;
-	run_timer timeToInit1IntD;
-	for(int k = 0; k < 3; k++) { //run the task 3 times
-		timeToInit1IntD.start(); //start timer
-		int d = 3;
-		timeToInit1IntD.stop(); //stop timer
-		int taskThreeTime = timeToInit1IntD.get_this_run_time(); //get_this_run_time()
-		cout << "(" << k+1 << ")Time to store d: " << taskThreeTime << "ms." <<  endl; //cout above's value
-		timeToInit1IntD.print_this_run_time(); //print_this_run_time()
-		cout << endl;
+	cout << endl << endl << "== Run time to initialize ints e&f 10^9 times==" << endl;
+	int e, f = 0;
+	run_timer timeToInit2IntsEF;
+	timeToInit2IntsEF.start();
+	for(int i = 0; i < 1000000000; i++) { //run the task 10^9 times
+		e=i, f=i+1;
 	}
-	int functionThreeTimeAverage = timeToInit1IntD.get_average_run_time(); //get_average_run_time().
-	cout << "-- Average time to initialize int d: [" << functionThreeTimeAverage << "ms] --" <<  endl; //check average
+	timeToInit2IntsEF.stop();
+	cout << "e=" << e << endl;
+	cout << "f=" << f << endl;
+	int loopThreeTimeAverage = timeToInit2IntsEF.get_average_run_time(); //get_average_run_time().
+	cout << "-- Average time to initialize int e&f: [" << loopThreeTimeAverage << "ms] --" << endl; //check average
+	//print_average_run_time() is called after all functions are timed.
+	timeToInit2IntsEF.print_this_run_time();
+	timeToInit2IntsEF.print_average_run_time();
 
-	//For loops complete. Check average times again.
-	cout << endl;
-	cout << "For loops complete. Printing average task run times." << endl;
-	timeToInit2IntsAB.print_average_run_time(); //print_average_run_time(). Should equal above's output.
-	timeToInit1IntC.print_average_run_time(); //print_average_run_time(). Should equal above's output.
-	timeToInit1IntD.print_average_run_time(); //print_average_run_time(). Should equal above's output.
-	cout << endl;
+	cout << endl << endl << "^^^^Testing Complete^^^^";
 
 	return 1;
-}//main() end
+}
