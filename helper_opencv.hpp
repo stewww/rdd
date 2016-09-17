@@ -30,26 +30,20 @@ typedef struct {
 } Display_Info_S ;
 
 
-// #1 = highest priority, #5 = lowest
 // Doxygen Comments TODO:
 // Note, min value is defaulted to 0
 void helper_trackbarSimple(const string trackbarName, const string windowName, int * variable, const int maxValue);
 
-//Voted: Steven #5
 // Returns frame rate of this display, can easily be called with displayInfo.at(index)
 uint helper_displayWindow(Display_Info_S displayInfo);
 
-//Voted: Steven #5
 void helper_seekFrameByCount(VideoCapture * capturePtr, uint frameCount);
 
-//Voted: Steven #3
 void helper_seekFrameByMs(VideoCapture * capturePtr, double ms);
 
-//Voted: Steven #5
 // If the capture type is video, videoName can be omitted (hence defaulted to NULL)
 void helper_getVideoCapture(VideoCapture * capturePtr, VideoCapture_E captureType, string videoName = NULL);
 
-//Voted: Steven #2
 // Call this before a section where you want to track the total CPU usage of
 void helper_startCounter(idkDataType_S * counterStructPtr);
 // Call this after the section where you want to track the total CPU usage of
@@ -59,6 +53,6 @@ void helper_stopCounter(idkDataType_S * counterStructPtr);
 void helper_cropImage(Mat * inputImage, Mat * croppedImage);
 
 // creates ellipses around contours
-void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage);
+void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minSquaredArea);
 
 #endif /* HELPER_OPENCV_HPP_ */

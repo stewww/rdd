@@ -24,12 +24,12 @@ void helper_trackbarSimple(const string trackbarName, const string windowName, i
 	createTrackbar(trackbarName.c_str(), windowName.c_str(), variable, maxValue);
 }
 
-void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage)
+void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minSquaredArea)
 {
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 	/// Find contours
-	findContours(*inputImage, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	findContours(*inputImage, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 	/// Find the rotated rectangles and ellipses for each contour
 	vector<RotatedRect> minRect( contours.size() );
@@ -37,8 +37,8 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage)
 
 	for( int i = 0; i < contours.size(); i++ )
 	{
-		minRect[i] = minAreaRect( Mat(contours[i])
-		);
+
+		minRect[i] = minAreaRect( Mat(contours[i]));
 		if( contours[i].size() > 5 )
 		{
 			minEllipse[i] = fitEllipse( Mat(contours[i]) );
@@ -50,7 +50,7 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage)
 	for( int i = 0; i< contours.size(); i++ )
 	{
 		// Only use large bounding rectangles
-		if (minRect[i].size.height > 5 && minRect[i].size.width > 10)
+		if (minRect[i].size.height > minSquaredArea && minRect[i].size.width > minSquaredArea)
 		{
 			Scalar red = Scalar(0, 0, 255);
 			Scalar green = Scalar(0, 255, 0);
@@ -71,7 +71,7 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage)
 					intersections++;
 				}
 			}
-			const int intersectionsRequired = 2;
+			const int intersectionsRequired = 3;
 			if (intersections >= intersectionsRequired)
 			{
 				circle(*outputImage, minRect[i].center, 10, green, -1);
