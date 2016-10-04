@@ -55,4 +55,10 @@ void helper_cropImage(Mat * inputImage, Mat * croppedImage);
 // creates ellipses around contours
 void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minSquaredArea);
 
+// Reduces the color gradient of the image
+void colorReduce(Mat& image, int div=64);
+
+// Draws bounding rectangles around all related contours
+void drawBoundingContours(Mat& input, Mat& output);
+
 #endif /* HELPER_OPENCV_HPP_ */

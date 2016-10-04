@@ -34,6 +34,7 @@ static const string windowName_EdgeDetectionGrey = "Edge Detection Grey";
 static const string windowName_CroppedImage = "Cropped Image";
 static const string windowName_prevGrey = "Prev Grey Image";
 static const string windowName_currGrey = "Current Grey Image";
+static const string windowName_SimpleColors = "Simple Colors";
 
 void detect_initDebugInfo(void)
 {
@@ -87,6 +88,7 @@ void detect_initDebugInfo(void)
 
 static VideoCapture capture;
 static bool updateImage = false;
+static bool programStart = false;
 
 static bool openCapture(void)
 {
@@ -111,6 +113,7 @@ static bool waitForNextFrame(void)
 		updateImage = !updateImage;
 		if (updateImage)
 		{
+			programStart = true;
 			printf("Running video\n");
 		}
 		else
@@ -275,6 +278,96 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 		if (!waitForNextFrame())
 		{
 			return false;
+		}
+	}
+}
+
+int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
+{
+	if (!openCapture())
+	{
+		return false;
+	}
+
+	while (1)
+	{
+		static Mat inputImage;
+		static Mat channel[3];
+		static Mat simpleColorImage;
+		static Mat edgeDetectionImageGrey;
+		static Mat temp1;
+		static Mat contoursAndEllipse;
+		static bool start = true;
+		const int division = 32;
+
+		if (updateImage || start)
+		{
+			capture.read(inputImage);
+			start = false;
+
+			helper_cropImage(&inputImage, &inputImage);
+
+			// HSV?
+			cvtColor(inputImage, inputImage, CV_RGB2HSV);
+
+		}
+		if (programStart)
+		{
+			// Split into H,S and V
+			split(inputImage, channel);
+
+			// Taking hue only
+			channel[0] = Mat::zeros(inputImage.rows, inputImage.cols, CV_8UC1);//Set hue channel to 0
+			channel[1] = Mat::zeros(inputImage.rows, inputImage.cols, CV_8UC1);//Set saturation channel to 0
+
+			// Merge the channels back together
+			merge(channel, 3, simpleColorImage);
+
+			// Simple color reduction
+			colorReduce(simpleColorImage, division);
+
+			simpleColorImage.copyTo(edgeDetectionImageGrey);
+
+			// Copy over the channels before calculating greyscale
+			// Split into H,S and V
+			split(edgeDetectionImageGrey, channel);
+
+			// Taking hue only
+			channel[2].copyTo(channel[0]);
+			channel[2].copyTo(channel[1]);
+
+			// Merge the channels back together
+			merge(channel, 3, edgeDetectionImageGrey);
+
+
+			// Convert to greyscale
+			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
+
+	#if 0
+			Canny(edgeDetectionImageGrey, edgeDetectionImageGrey, division - 1, division + 1);
+	#else
+			edgeDetectionImageGrey.copyTo(contoursAndEllipse);
+			drawBoundingContours(edgeDetectionImageGrey, contoursAndEllipse);
+	#endif
+
+			// Show Images
+			imshow(windowName_InputImage, inputImage);
+			imshow(windowName_SimpleColors, simpleColorImage);
+			imshow(windowName_EdgeDetectionGrey, edgeDetectionImageGrey);
+			imshow(windowName_contoursAndEllipses, contoursAndEllipse);
+			// If we need to quit, then quit
+			if (!waitForNextFrame())
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// If we need to quit, then quit
+			if (!waitForNextFrame())
+			{
+				return false;
+			}
 		}
 	}
 }

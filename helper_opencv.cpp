@@ -5,7 +5,7 @@ void helper_cropImage(Mat * inputImage, Mat * croppedImage)
 	Rect rect;
 	Point one, two;
 	Rect box;
-        
+
 	one.x = 200;
 	one.y = 400;
 	two.x = 1100;
@@ -85,4 +85,59 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 				line( *outputImage , rect_points[j], rect_points[(j+1)%4], blue, 1, 8 );
 		}
 	}
+}
+
+void colorReduce(Mat& image, int div)
+{
+    int nl = image.rows;                    // number of lines
+    int nc = image.cols * image.channels(); // number of elements per line
+
+    for (int j = 0; j < nl; j++)
+    {
+        // get the address of row j
+        uchar* data = image.ptr<uchar>(j);
+
+        for (int i = 0; i < nc; i++)
+        {
+            // process if it's nonzero (ignore black)
+        	if (data[i] > 0)
+        	{
+                data[i] = data[i] / div * div + div / 2;
+        	}
+        }
+    }
+}
+
+// Will operate on
+void drawBoundingContours(Mat& input, Mat& output)
+{
+	const int rectMinWidth = 1;
+	const int maxWidth = 300;
+	const int minWidth = 30;
+	const int minHeight = 20;
+	const float flatness = 1.5;
+	const float verticalness = 1.5;
+    input.copyTo(output);
+
+    //GaussianBlur(input, output, Size(15, 15), 0);
+    adaptiveThreshold(output, output,255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY,15,-5);
+
+    vector< vector <Point> > contours; // Vector for storing contour
+    vector< Vec4i > hierarchy;
+    findContours(output, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+
+    for( int i = 0; i< contours.size(); i=hierarchy[i][0] ) // iterate through each contour.
+    {
+        Rect r= boundingRect(contours[i]);
+        if ((r.width < maxWidth) &&								// Must be smaller than a large portion of the screen
+        	(r.width > minWidth || r.height > minHeight) &&		// Must be larger than a small blip
+			((r.width > r.height * flatness) || 				// Horizontal contours
+        	(r.height > r.width * verticalness)))				// Vertical contours (motorcycles)
+        {
+            if(hierarchy[i][2]<0) //Check if there is a child contour
+              rectangle(output,Point(r.x-rectMinWidth,r.y-rectMinWidth), Point(r.x+r.width+rectMinWidth,r.y+r.height+rectMinWidth), Scalar(255,255,255),2,8,0); //Opened contour
+            else
+              rectangle(output,Point(r.x-rectMinWidth,r.y-rectMinWidth), Point(r.x+r.width+rectMinWidth,r.y+r.height+rectMinWidth), Scalar(255,255,255),2,8,0); //closed contour
+        }
+    }
 }

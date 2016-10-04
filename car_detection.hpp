@@ -15,5 +15,6 @@ typedef struct {
 void detect_initDebugInfo(void);
 int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles);
 int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles);
+int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles);
 
 #endif /* CAR_DETECTION_HPP_ */
