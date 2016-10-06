@@ -97,13 +97,22 @@ void colorReduce(Mat& image, int div)
         // get the address of row j
         uchar* data = image.ptr<uchar>(j);
 
-        for (int i = 0; i < nc; i++)
+        for (int i = 0; i < nc; i+=3)
         {
-            // process if it's nonzero (ignore black)
-        	if (data[i] > 0)
-        	{
-                data[i] = data[i] / div * div + div / 2;
-        	}
+            if ((data[i + 0] >= 0 && data[i + 0] < 20) && // saturation???
+                (data[i + 1] > 105) && // value?
+    			(data[i + 2] >= 0  && data[i + 2] < 140)) // hue....?
+            {
+            	data[i + 0] = 0;
+            	data[i + 1] = 0;
+            	data[i + 2] = 0;
+            }
+            else
+            {
+                data[i + 0] = data[i + 0] / div * div + div / 2;
+                data[i + 1] = data[i + 1] / div * div + div / 2;
+                data[i + 2] = data[i + 2] / div * div + div / 2;
+            }
         }
     }
 }
@@ -112,11 +121,11 @@ void colorReduce(Mat& image, int div)
 void drawBoundingContours(Mat& input, Mat& output)
 {
 	const int rectMinWidth = 1;
-	const int maxWidth = 300;
-	const int minWidth = 30;
-	const int minHeight = 20;
-	const float flatness = 1.5;
-	const float verticalness = 1.5;
+	const int maxWidth = 1000;
+	const int minWidth = 1;
+	const int minHeight = 1;
+	const float flatness = 1;
+	const float verticalness = 1;
     input.copyTo(output);
 
     //GaussianBlur(input, output, Size(15, 15), 0);
@@ -126,7 +135,7 @@ void drawBoundingContours(Mat& input, Mat& output)
     vector< Vec4i > hierarchy;
     findContours(output, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
 
-    for( int i = 0; i< contours.size(); i=hierarchy[i][0] ) // iterate through each contour.
+    for( int i = 0; i< contours.size(); i=hierarchy[i][0] ) 	// iterate through each contour.
     {
         Rect r= boundingRect(contours[i]);
         if ((r.width < maxWidth) &&								// Must be smaller than a large portion of the screen

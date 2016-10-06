@@ -291,6 +291,7 @@ int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 
 	while (1)
 	{
+		static Mat actualInputImage;
 		static Mat inputImage;
 		static Mat channel[3];
 		static Mat simpleColorImage;
@@ -302,29 +303,32 @@ int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 
 		if (updateImage || start)
 		{
-			capture.read(inputImage);
+			capture.read(actualInputImage);
+			actualInputImage.copyTo(inputImage);
 			start = false;
 
 			helper_cropImage(&inputImage, &inputImage);
 
 			// HSV?
-			cvtColor(inputImage, inputImage, CV_RGB2HSV);
+			cvtColor(inputImage, inputImage, CV_BGR2HSV);
 
 		}
 		if (programStart)
 		{
-			// Split into H,S and V
-			split(inputImage, channel);
-
-			// Taking hue only
-			channel[0] = Mat::zeros(inputImage.rows, inputImage.cols, CV_8UC1);//Set hue channel to 0
-			channel[1] = Mat::zeros(inputImage.rows, inputImage.cols, CV_8UC1);//Set saturation channel to 0
-
-			// Merge the channels back together
-			merge(channel, 3, simpleColorImage);
+			inputImage.copyTo(simpleColorImage);
 
 			// Simple color reduction
 			colorReduce(simpleColorImage, division);
+
+			// Split into H,S and V
+			split(simpleColorImage, channel);
+
+			// Taking hue only
+			channel[0] = Mat::zeros(simpleColorImage.rows, simpleColorImage.cols, CV_8UC1);//Set hue channel to 0
+			channel[1] = Mat::zeros(simpleColorImage.rows, simpleColorImage.cols, CV_8UC1);//Set saturation channel to 0
+
+			// Merge the channels back together
+			merge(channel, 3, simpleColorImage);
 
 			simpleColorImage.copyTo(edgeDetectionImageGrey);
 
@@ -351,6 +355,7 @@ int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 	#endif
 
 			// Show Images
+			imshow("Actual input image", actualInputImage);
 			imshow(windowName_InputImage, inputImage);
 			imshow(windowName_SimpleColors, simpleColorImage);
 			imshow(windowName_EdgeDetectionGrey, edgeDetectionImageGrey);
