@@ -1,4 +1,7 @@
 #include "helper_opencv.hpp"
+#include <stdlib.h>
+
+static FILE * outputFile;
 
 void helper_cropImage(Mat * inputImage, Mat * croppedImage)
 {
@@ -89,8 +92,27 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 
 void colorReduce(Mat& image, int div)
 {
+#define FIRSTMETHOD 0
     int nl = image.rows;                    // number of lines
     int nc = image.cols * image.channels(); // number of elements per line
+#if FIRSTMETHOD
+    double hueConstSquared = -7.995004;
+    double hueConst = 167.322176;
+    double satConstSquared = -0.003410;
+    double satConst = 1.419707;
+    double valConstSquared = 0.007036;
+    double valConst = -0.588139;
+    double hsvStdev = 14.302897;
+    double hsvConst = 1000;
+#else
+    double meanH = 10.405878;
+    double stdevH = 1.053972;
+    double meanS = 176.634908;
+    double stdevS = 29.301024;
+    double meanV = 59.042768;
+    double stdevV = 16.655828;
+#endif
+    double zscoreMax = 4;
 
     for (int j = 0; j < nl; j++)
     {
@@ -99,10 +121,18 @@ void colorReduce(Mat& image, int div)
 
         for (int i = 0; i < nc; i+=3)
         {
-            if ((data[i + 0] >= 0 && data[i + 0] < 20) && // saturation???
-                (data[i + 1] > 105) && // value?
-    			(data[i + 2] >= 0  && data[i + 2] < 140)) // hue....?
-            {
+        	// If the calculated zscore of the pixel is within reasonable standard deviations, then accept it as the road
+#if FIRSTMETHOD
+			if (abs(hueConstSquared * data[i + 0] * data[i + 0] + hueConst * data[i + 0] +
+					satConstSquared * data[i + 1] * data[i + 1] + satConst * data[i + 1] +
+					valConstSquared * data[i + 2] * data[i + 2] + valConst * data[i + 2]
+					- hsvConst) < hsvStdev * zscoreMax)
+#else
+			if ((abs(meanH - data[i + 0]) < zscoreMax * stdevH) &&
+				(abs(meanS - data[i + 1]) < zscoreMax * stdevS) &&
+				(abs(meanV - data[i + 2]) < zscoreMax * stdevV))
+#endif
+			{
             	data[i + 0] = 0;
             	data[i + 1] = 0;
             	data[i + 2] = 0;
@@ -121,9 +151,9 @@ void colorReduce(Mat& image, int div)
 void drawBoundingContours(Mat& input, Mat& output)
 {
 	const int rectMinWidth = 1;
-	const int maxWidth = 1000;
-	const int minWidth = 1;
-	const int minHeight = 1;
+	const int maxWidth = 400;
+	const int minWidth = 10;
+	const int minHeight = 10;
 	const float flatness = 1;
 	const float verticalness = 1;
     input.copyTo(output);
@@ -149,4 +179,38 @@ void drawBoundingContours(Mat& input, Mat& output)
               rectangle(output,Point(r.x-rectMinWidth,r.y-rectMinWidth), Point(r.x+r.width+rectMinWidth,r.y+r.height+rectMinWidth), Scalar(255,255,255),2,8,0); //closed contour
         }
     }
+}
+
+static void csvDumpCallbackFunc(int event, int x, int y, int flags, void* userdata)
+{
+#if 0
+    Mat* rgb = (Mat*) userdata;
+    if (event == CV_EVENT_LBUTTONDOWN)
+    {
+        printf("%d %d: %d, %d, %d\n",
+        x, y,
+        (int)(*rgb).at<Vec3b>(y, x)[0],
+        (int)(*rgb).at<Vec3b>(y, x)[1],
+        (int)(*rgb).at<Vec3b>(y, x)[2]);
+    }
+#else
+    Mat* rgb = (Mat*) userdata;
+	// If the mouse is pressed down and the cursor was moved or pressed, then we grab the pixel channel values
+	if ((EVENT_FLAG_LBUTTON == flags) &&
+		(EVENT_MOUSEMOVE == event ||
+		 EVENT_LBUTTONDOWN == event))
+	{
+        fprintf(outputFile, "%d, %d, %d\n",
+        (int)(*rgb).at<Vec3b>(y, x)[0],
+        (int)(*rgb).at<Vec3b>(y, x)[1],
+        (int)(*rgb).at<Vec3b>(y, x)[2]);
+	}
+#endif
+}
+
+void setCSVDump(string windowName, string fileName, Mat * matrix)
+{
+	outputFile = fopen(fileName.c_str(), "w");
+    //set the callback function for any mouse event to the file name
+   setMouseCallback(windowName, csvDumpCallbackFunc, matrix);
 }

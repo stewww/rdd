@@ -7,4 +7,5 @@ rdd.VC.VC.opendb
 rdd.VC.db
 *.mp4
 x64/
+*.csv
 rdd.sln

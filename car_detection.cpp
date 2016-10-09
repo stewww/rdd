@@ -289,16 +289,18 @@ int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 		return false;
 	}
 
+	static Mat actualInputImage;
+	static Mat inputImage;
+	static Mat channel[3];
+	static Mat simpleColorImage;
+	static Mat edgeDetectionImageGrey;
+	static Mat temp1;
+	static Mat contoursAndEllipse;
+	static bool start = true;
+
+	setCSVDump(windowName_InputImage, "IDK.csv", &inputImage);
 	while (1)
 	{
-		static Mat actualInputImage;
-		static Mat inputImage;
-		static Mat channel[3];
-		static Mat simpleColorImage;
-		static Mat edgeDetectionImageGrey;
-		static Mat temp1;
-		static Mat contoursAndEllipse;
-		static bool start = true;
 		const int division = 32;
 
 		if (updateImage || start)

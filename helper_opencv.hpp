@@ -61,4 +61,7 @@ void colorReduce(Mat& image, int div=64);
 // Draws bounding rectangles around all related contours
 void drawBoundingContours(Mat& input, Mat& output);
 
+// With the specified window, sets up the CSV dump interrupt to dump to the file specified. This should be a #define
+void setCSVDump(string windowName, string fileName, Mat * matrix);
+
 #endif /* HELPER_OPENCV_HPP_ */
