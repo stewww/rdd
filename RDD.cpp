@@ -12,6 +12,6 @@ int main( int argc, char** argv )
 #if DETECT_VEHICLES
 	vector<Vehicle_Information_S> vehicles;
 	detect_initDebugInfo();
-	return detect_vehicles_colorFilter(&vehicles);
+	return detect_vehicles_edgeDetection(&vehicles);
 #endif
 }

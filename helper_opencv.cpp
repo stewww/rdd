@@ -9,10 +9,10 @@ void helper_cropImage(Mat * inputImage, Mat * croppedImage)
 	Point one, two;
 	Rect box;
 
-	one.x = 200;
-	one.y = 400;
+	one.x = 300;
+	one.y = 275;
 	two.x = 1100;
-	two.y = 700;
+	two.y = 500;
 
 	box.width = abs(one.x - two.x);
 	box.height = abs(one.y - two.y);
@@ -27,7 +27,7 @@ void helper_trackbarSimple(const string trackbarName, const string windowName, i
 	createTrackbar(trackbarName.c_str(), windowName.c_str(), variable, maxValue);
 }
 
-void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minSquaredArea)
+void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minHeight, int minWidth, int maxHeight, int maxWidth)
 {
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
@@ -42,7 +42,7 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 	{
 
 		minRect[i] = minAreaRect( Mat(contours[i]));
-		if( contours[i].size() > 5 )
+		if( contours[i].size() > 5)
 		{
 			minEllipse[i] = fitEllipse( Mat(contours[i]) );
 		}
@@ -53,7 +53,8 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 	for( int i = 0; i< contours.size(); i++ )
 	{
 		// Only use large bounding rectangles
-		if (minRect[i].size.height > minSquaredArea && minRect[i].size.width > minSquaredArea)
+		if (minRect[i].size.height > minHeight && minRect[i].size.width > minWidth &&
+			minRect[i].size.height < maxHeight && minRect[i].size.width < maxWidth)
 		{
 			Scalar red = Scalar(0, 0, 255);
 			Scalar green = Scalar(0, 255, 0);
@@ -62,30 +63,35 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 			// bounding contour
 			drawContours( *outputImage , contours, i, white, 1, 8, vector<Vec4i>(), 0, Point() );
 			// bounding ellipse
-			ellipse( *outputImage , minEllipse[i], blue, 2, 8 );
+			ellipse( *outputImage , minEllipse[i], white, 2, 8 );
 
 			// If this is a candidate for a vehicle (more than x number of bounding rectangles intersect, then color the circle green
 			int intersections = 0;
 			for(int rectIndex = 0; rectIndex < contours.size(); rectIndex++)
 			{
+#if 0
 				// If this rectangle intersects and is not the same rectangle as the rectangle in question
 				if ((rectIndex != i) && ((minRect[rectIndex].boundingRect() & minRect[i].boundingRect()).area() > 0))
+#endif
+				// If the rectangle stacks up vertically with another rectangle (approximately)
+				if ((rectIndex != i) && (abs(minRect[rectIndex].boundingRect().x - minRect[i].boundingRect().x) < 4) &&
+										(abs(minRect[rectIndex].boundingRect().y - minRect[i].boundingRect().y) < 50))
 				{
 					intersections++;
 				}
 			}
-			const int intersectionsRequired = 3;
+			const int intersectionsRequired = 2;
 			if (intersections >= intersectionsRequired)
 			{
-				circle(*outputImage, minRect[i].center, 10, green, -1);
+				//circle(*outputImage, minRect[i].center, 10, green, -1);
 			}
 
 			// circle at the center
-			circle(*outputImage, minRect[i].center, 5, red, -1);
+			//circle(*outputImage, minRect[i].center, 5, red, -1);
 			// rotated rectangle
 			Point2f rect_points[4]; minRect[i].points( rect_points );
 			for( int j = 0; j < 4; j++ )
-				line( *outputImage , rect_points[j], rect_points[(j+1)%4], blue, 1, 8 );
+				line( *outputImage , rect_points[j], rect_points[(j+1)%4], white, 1, 8 );
 		}
 	}
 }
@@ -105,12 +111,12 @@ void colorReduce(Mat& image, int div)
     double hsvStdev = 14.302897;
     double hsvConst = 1000;
 #else
-    double meanH = 10.405878;
-    double stdevH = 1.053972;
-    double meanS = 176.634908;
-    double stdevS = 29.301024;
-    double meanV = 59.042768;
-    double stdevV = 16.655828;
+    double meanH = 24.315079;
+    double stdevH = 5.106813;
+    double meanS = 42.879132;
+    double stdevS = 12.956450;
+    double meanV = 65.678858;
+    double stdevV = 9.244539;
 #endif
     double zscoreMax = 4;
 

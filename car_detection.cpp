@@ -11,13 +11,10 @@ static int greyDiffInterval = 9;
 static const int greyDiffMax = 50;
 static const string trackbarGreyDiffName = "Grey Diff Trackbar";
 
-static int edgeDetectionGreyThreshold = 40;
+static int edgeDetectionGreyThreshold = 48;
 static const int edgeDetectionGreyThresholdMax = 255;
 static string trackbarEdgeDetectionThresholdName = "Edge Detection Grey Threshold Trackbar";
 
-static int contourMinSquaredArea = 5;
-static const int contourMinSquaredAreaMax = 40;
-static string trackbarContourMinSquaredAreaName = "Contour Min Squared Area Trackbar";
 
 /*** Window names ***/
 static const string windowName_greyThreshold = "Grey Threshold";
@@ -48,11 +45,6 @@ void detect_initDebugInfo(void)
 
  	namedWindow(windowName_contours);
  	moveWindow(windowName_contours, 100, 100);
-
- 	namedWindow(windowName_contoursAndEllipses);
- 	moveWindow(windowName_contoursAndEllipses, 1000, 500);
-	helper_trackbarSimple(trackbarContourMinSquaredAreaName, windowName_contoursAndEllipses, &contourMinSquaredArea, contourMinSquaredAreaMax);
-
 
  	namedWindow(windowName_InputImage);
  	moveWindow(windowName_InputImage, 100, 100);
@@ -92,7 +84,7 @@ static bool programStart = false;
 
 static bool openCapture(void)
 {
-	capture.open("testvid00.mp4");
+	capture.open("ir_testvid01.mp4");
 
 	if (!capture.isOpened())
 	{
@@ -171,7 +163,7 @@ int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
 					{
 						imshow(windowName_greyThreshold, threshold_diff);
 						threshold_diff.copyTo(contours_drawing);
-						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse, contourMinSquaredArea);
+						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse, 10,15,300,400);
 						imshow(windowName_contours, contours_drawing);
 						imshow(windowName_contoursAndEllipses, contoursAndEllipse);
 					}
@@ -217,41 +209,63 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 		static Mat inputImageRight;
 		static Mat edgeDetectionImage;
 		static Mat edgeDetectionImageGrey;
+		static Mat simpleColorImage;
 		static Mat temp1;
 		static Mat contoursAndEllipse;
 		static bool start = true;
-		static int edgeWidth = 4;
+		static int edgeWidth = 1;
 
 		if (updateImage || start)
 		{
+			const int division = 32;
 			capture.read(inputImage);
 			helper_cropImage(&inputImage, &inputImage);
-			start = false;
+
+			//cvtColor(inputImage, inputImage, CV_BGR2HSV);
+
+			inputImage.copyTo(simpleColorImage);
+
+			// Simple color reduction
+			colorReduce(simpleColorImage, division);
 
 			// Zero out all Mats
-			inputImageUp = Mat::zeros(inputImage.size(), inputImage.type());
-			inputImageDown = Mat::zeros(inputImage.size(), inputImage.type());
-			inputImageLeft = Mat::zeros(inputImage.size(), inputImage.type());
-			inputImageRight = Mat::zeros(inputImage.size(), inputImage.type());
-			edgeDetectionImage = Mat::zeros(inputImage.size(), inputImage.type());
+			inputImageUp = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			//inputImageDown = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			//inputImageLeft = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			//inputImageRight = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			if (start)
+			{
+				edgeDetectionImage = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			}
 
 			// Shift all Mats
-			inputImage(cv::Rect(0,edgeWidth, inputImage.cols,inputImage.rows-edgeWidth)).copyTo(inputImageUp(cv::Rect(0,0,inputImage.cols,inputImage.rows-edgeWidth)));
-			inputImage(cv::Rect(0,0, inputImage.cols,inputImage.rows-edgeWidth)).copyTo(inputImageDown(cv::Rect(0,edgeWidth,inputImage.cols,inputImage.rows-edgeWidth)));
-			inputImage(cv::Rect(edgeWidth,0, inputImage.cols-edgeWidth,inputImage.rows)).copyTo(inputImageLeft(cv::Rect(0,0,inputImage.cols-edgeWidth,inputImage.rows)));
-			inputImage(cv::Rect(0,0, inputImage.cols-edgeWidth,inputImage.rows)).copyTo(inputImageRight(cv::Rect(edgeWidth,0,inputImage.cols-edgeWidth,inputImage.rows)));
+			simpleColorImage(cv::Rect(0,edgeWidth, simpleColorImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageUp(cv::Rect(0,0,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
+			//simpleColorImage(cv::Rect(0,0, simpleColorImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageDown(cv::Rect(0,edgeWidth,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
+			//simpleColorImage(cv::Rect(edgeWidth,0, simpleColorImage.cols-edgeWidth,simpleColorImage.rows)).copyTo(inputImageLeft(cv::Rect(0,0,simpleColorImage.cols-edgeWidth,simpleColorImage.rows)));
+			//simpleColorImage(cv::Rect(0,0, simpleColorImage.cols-edgeWidth,simpleColorImage.rows)).copyTo(inputImageRight(cv::Rect(edgeWidth,0,simpleColorImage.cols-edgeWidth,simpleColorImage.rows)));
 
 			// Take absolute diff of each input image
-			absdiff(inputImage, inputImageUp, inputImageUp);
-			absdiff(inputImage, inputImageDown, inputImageDown);
-			absdiff(inputImage, inputImageLeft, inputImageLeft);
-			absdiff(inputImage, inputImageRight, inputImageRight);
+			absdiff(simpleColorImage, inputImageUp, inputImageUp);
+			//absdiff(simpleColorImage, inputImageDown, inputImageDown);
+			//absdiff(simpleColorImage, inputImageLeft, inputImageLeft);
+			//absdiff(simpleColorImage, inputImageRight, inputImageRight);
 
-			// Add the diffs together
+			double filterSize = 4;
+			// Add the diffs together (average for now)
+			Scalar numerator = Scalar(filterSize - 1, (filterSize - 1) + 0.5, filterSize - 1);
+			Scalar denominator = Scalar(filterSize, filterSize, filterSize);
+			if (!start)
+			{
+				multiply(edgeDetectionImage, numerator, edgeDetectionImage);
+				divide(edgeDetectionImage, denominator, edgeDetectionImage);
+
+				divide(inputImageUp, denominator, inputImageUp);
+			}
+
 			add(edgeDetectionImage, inputImageUp, edgeDetectionImage);
-			add(edgeDetectionImage, inputImageDown, edgeDetectionImage);
-			add(edgeDetectionImage, inputImageLeft, edgeDetectionImage);
-			add(edgeDetectionImage, inputImageRight, edgeDetectionImage);
+			//add(edgeDetectionImage, inputImageDown, edgeDetectionImage);
+			//add(edgeDetectionImage, inputImageLeft, edgeDetectionImage);
+			//add(edgeDetectionImage, inputImageRight, edgeDetectionImage);
 
 //			inRange(edgeDetectionImage, Scalar(240, edgeDetectionGreyThreshold, edgeDetectionGreyThreshold), Scalar(255, 255, 255), edgeDetectionImageGrey);
 
@@ -262,10 +276,10 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
 
 			edgeDetectionImageGrey.copyTo(temp1);
-			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse, contourMinSquaredArea);
+			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,1,10,300,400);
 
 			// Show Images
-			imshow(windowName_InputImage, inputImage);
+			imshow(windowName_InputImage, simpleColorImage);
 //			imshow(windowName_InputImageUp, inputImageUp);
 //			imshow(windowName_InputImageDown, inputImageDown);
 //			imshow(windowName_InputImageLeft, inputImageLeft);
@@ -273,6 +287,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			imshow(windowName_EdgeDetection, edgeDetectionImage);
 			imshow(windowName_EdgeDetectionGrey, edgeDetectionImageGrey);
 			imshow(windowName_contoursAndEllipses, contoursAndEllipse);
+			start = false;
 		}
 		// If we need to quit, then quit
 		if (!waitForNextFrame())
@@ -322,29 +337,7 @@ int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 			// Simple color reduction
 			colorReduce(simpleColorImage, division);
 
-			// Split into H,S and V
-			split(simpleColorImage, channel);
-
-			// Taking hue only
-			channel[0] = Mat::zeros(simpleColorImage.rows, simpleColorImage.cols, CV_8UC1);//Set hue channel to 0
-			channel[1] = Mat::zeros(simpleColorImage.rows, simpleColorImage.cols, CV_8UC1);//Set saturation channel to 0
-
-			// Merge the channels back together
-			merge(channel, 3, simpleColorImage);
-
 			simpleColorImage.copyTo(edgeDetectionImageGrey);
-
-			// Copy over the channels before calculating greyscale
-			// Split into H,S and V
-			split(edgeDetectionImageGrey, channel);
-
-			// Taking hue only
-			channel[2].copyTo(channel[0]);
-			channel[2].copyTo(channel[1]);
-
-			// Merge the channels back together
-			merge(channel, 3, edgeDetectionImageGrey);
-
 
 			// Convert to greyscale
 			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
