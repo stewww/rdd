@@ -38,12 +38,15 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 	vector<RotatedRect> minRect( contours.size() );
 	vector<RotatedRect> minEllipse( contours.size() );
 
+	vector<bool> alreadyTracked(contours.size());
+	fill(alreadyTracked.begin(), alreadyTracked.end(), false);
+
 	for( int i = 0; i < contours.size(); i++ )
 	{
 
-		minRect[i] = minAreaRect( Mat(contours[i]));
 		if( contours[i].size() > 5)
 		{
+			minRect[i] = minAreaRect( Mat(contours[i]));
 			minEllipse[i] = fitEllipse( Mat(contours[i]) );
 		}
 	}
@@ -63,10 +66,11 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 			// bounding contour
 			drawContours( *outputImage , contours, i, white, 1, 8, vector<Vec4i>(), 0, Point() );
 			// bounding ellipse
-			ellipse( *outputImage , minEllipse[i], white, 2, 8 );
+			//ellipse( *outputImage , minEllipse[i], white, 2, 8 );
 
 			// If this is a candidate for a vehicle (more than x number of bounding rectangles intersect, then color the circle green
 			int intersections = 0;
+			bool newVehicle = true;
 			for(int rectIndex = 0; rectIndex < contours.size(); rectIndex++)
 			{
 #if 0
@@ -74,24 +78,31 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 				if ((rectIndex != i) && ((minRect[rectIndex].boundingRect() & minRect[i].boundingRect()).area() > 0))
 #endif
 				// If the rectangle stacks up vertically with another rectangle (approximately)
-				if ((rectIndex != i) && (abs(minRect[rectIndex].boundingRect().x - minRect[i].boundingRect().x) < 4) &&
+				if ((rectIndex != i) && (abs((minRect[rectIndex].boundingRect().x + minRect[rectIndex].boundingRect().width / 2) -
+						                     (minRect[i].boundingRect().x + minRect[i].boundingRect().width / 2)) < 20) &&
 										(abs(minRect[rectIndex].boundingRect().y - minRect[i].boundingRect().y) < 50))
 				{
+					// Vehicle is already being tracked, don't track the contour
+					if (alreadyTracked[rectIndex])
+					{
+						newVehicle = false;
+					}
 					intersections++;
 				}
 			}
-			const int intersectionsRequired = 2;
-			if (intersections >= intersectionsRequired)
+			const int intersectionsRequired = 3;
+			if (intersections >= intersectionsRequired && (newVehicle == true))
 			{
-				//circle(*outputImage, minRect[i].center, 10, green, -1);
+				alreadyTracked[i] = true;
+				circle(*outputImage, minRect[i].center, 10, green, -1);
 			}
 
 			// circle at the center
-			//circle(*outputImage, minRect[i].center, 5, red, -1);
+			circle(*outputImage, minRect[i].center, 5, red, -1);
 			// rotated rectangle
 			Point2f rect_points[4]; minRect[i].points( rect_points );
 			for( int j = 0; j < 4; j++ )
-				line( *outputImage , rect_points[j], rect_points[(j+1)%4], white, 1, 8 );
+				;//line( *outputImage , rect_points[j], rect_points[(j+1)%4], white, 1, 8 );
 		}
 	}
 }

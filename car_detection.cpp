@@ -276,7 +276,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
 
 			edgeDetectionImageGrey.copyTo(temp1);
-			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,1,10,300,400);
+			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,3,15,300,400);
 
 			// Show Images
 			imshow(windowName_InputImage, simpleColorImage);
