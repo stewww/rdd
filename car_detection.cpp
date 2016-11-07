@@ -21,6 +21,7 @@ static const string windowName_greyThreshold = "Grey Threshold";
 static const string windowName_greyDiff = "Grey Diff";
 static const string windowName_contours = "Contours";
 static const string windowName_contoursAndEllipses = "Contours and Ellipses";
+static const string windowName_HSVImage = "HSV Image";
 static const string windowName_InputImage = "Input Image";
 static const string windowName_InputImageUp = "Input Image Up";
 static const string windowName_InputImageDown = "Input Image Down";
@@ -163,7 +164,8 @@ int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
 					{
 						imshow(windowName_greyThreshold, threshold_diff);
 						threshold_diff.copyTo(contours_drawing);
-						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse, 10,15,300,400);
+						vector<Point> pointsOfInterest;
+						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse, 10,15,300,400, &pointsOfInterest);
 						imshow(windowName_contours, contours_drawing);
 						imshow(windowName_contoursAndEllipses, contoursAndEllipse);
 					}
@@ -202,6 +204,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 
 	while (1)
 	{
+		static Mat hsvImage;
 		static Mat inputImage;
 		static Mat inputImageUp;
 		static Mat inputImageDown;
@@ -221,8 +224,9 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			capture.read(inputImage);
 			helper_cropImage(&inputImage, &inputImage);
 
-			//cvtColor(inputImage, inputImage, CV_BGR2HSV);
+			inputImage.copyTo(hsvImage);
 
+			cvtColor(hsvImage, hsvImage, CV_BGR2HSV);
 			inputImage.copyTo(simpleColorImage);
 
 			// Simple color reduction
@@ -252,7 +256,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 
 			double filterSize = 4;
 			// Add the diffs together (average for now)
-			Scalar numerator = Scalar(filterSize - 1, (filterSize - 1) + 0.5, filterSize - 1);
+			Scalar numerator = Scalar(filterSize - 1 + 0.5, filterSize - 1 + 0.5, filterSize - 1 + 0.5);
 			Scalar denominator = Scalar(filterSize, filterSize, filterSize);
 			if (!start)
 			{
@@ -276,10 +280,67 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
 
 			edgeDetectionImageGrey.copyTo(temp1);
-			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,3,15,300,400);
+
+			vector<Point> pointsOfInterest;
+
+			// Draw circles on the center of each contour and add it to a vector
+			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,3,15,300,400, &pointsOfInterest);
+
+			// Grab points around the points of interest
+			for (int point = 0; point < pointsOfInterest.size(); point++)
+			{
+				int xPos = pointsOfInterest.at(point).x;
+				int yPos = pointsOfInterest.at(point).y;
+				// How far we are going to sample our points in the x axis
+				int xWidth = 15;
+				// How far we are going to sample our points in the y axis
+				int yWidth = 10;
+				// If we have enough space to sample the point
+				if (xPos >= xWidth && xPos < (contoursAndEllipse.cols - xWidth) &&
+					yPos >= yWidth && yPos < (contoursAndEllipse.rows - yWidth))
+				{
+					// Amount of difference allowed to the contour's nearby sample points
+					int diffAmount = 40;
+					// Variable to keep track of how similar the nearby sample points are to the contour's center
+					int commonHSVCount = 0;
+					// How many sample points that must match to declare this as a valid point
+					int requiredHSVCount = 3;
+					printf("X: %i, Y: %i\n", xPos - xWidth, yPos - yWidth);
+
+#define SAMPLE_POINT(y,x,a)	contoursAndEllipse.at<Vec3b>(y,x)[a]
+
+#define SHOW_SAMPLE_POINT(y,x)	SAMPLE_POINT(y,x,0) = 255; \
+								SAMPLE_POINT(y,x,1) = 255; \
+								SAMPLE_POINT(y,x,2) = 255
+#define SHOW_VALID_SAMPLE(yOrigin, xOrigin, ySample, xSample)	\
+					if (abs(SAMPLE_POINT(yOrigin,xOrigin,0) - SAMPLE_POINT(ySample,xSample,0) < diffAmount) && 	\
+						abs(SAMPLE_POINT(yOrigin,xOrigin,1) - SAMPLE_POINT(ySample,xSample,1) < diffAmount) && 	\
+						abs(SAMPLE_POINT(yOrigin,xOrigin,2) - SAMPLE_POINT(ySample,xSample,2) < diffAmount))	\
+					{ \
+						SHOW_SAMPLE_POINT(ySample, xSample); \
+						printf("ysample: %i, xsample: %i\n", ySample, xSample); \
+						commonHSVCount++; \
+					}
+
+					SHOW_VALID_SAMPLE(yPos, xPos, (yPos - yWidth), (xPos - xWidth));
+					SHOW_VALID_SAMPLE(yPos, xPos, (yPos - yWidth), xPos);
+					SHOW_VALID_SAMPLE(yPos, xPos, (yPos - yWidth), (xPos + xWidth));
+					SHOW_VALID_SAMPLE(yPos, xPos, (yPos + yWidth), (xPos - xWidth));
+					SHOW_VALID_SAMPLE(yPos, xPos, (yPos + yWidth), xPos);
+					SHOW_VALID_SAMPLE(yPos, xPos, (yPos + yWidth), (xPos + xWidth));
+					if (commonHSVCount >= requiredHSVCount)
+					{
+						Scalar green = Scalar(0, 255, 0);
+						circle(inputImage, pointsOfInterest.at(point), 10, green, -1);
+					}
+
+				}
+			}
 
 			// Show Images
-			imshow(windowName_InputImage, simpleColorImage);
+			imshow(windowName_InputImage, inputImage);
+			imshow(windowName_HSVImage, hsvImage);
+			imshow(windowName_SimpleColors, simpleColorImage);
 //			imshow(windowName_InputImageUp, inputImageUp);
 //			imshow(windowName_InputImageDown, inputImageDown);
 //			imshow(windowName_InputImageLeft, inputImageLeft);

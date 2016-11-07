@@ -27,7 +27,7 @@ void helper_trackbarSimple(const string trackbarName, const string windowName, i
 	createTrackbar(trackbarName.c_str(), windowName.c_str(), variable, maxValue);
 }
 
-void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minHeight, int minWidth, int maxHeight, int maxWidth)
+void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minHeight, int minWidth, int maxHeight, int maxWidth,vector<Point> * pointsOfInterest)
 {
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
@@ -43,7 +43,6 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 
 	for( int i = 0; i < contours.size(); i++ )
 	{
-
 		if( contours[i].size() > 5)
 		{
 			minRect[i] = minAreaRect( Mat(contours[i]));
@@ -94,11 +93,13 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 			if (intersections >= intersectionsRequired && (newVehicle == true))
 			{
 				alreadyTracked[i] = true;
-				circle(*outputImage, minRect[i].center, 10, green, -1);
+				//circle(*outputImage, minRect[i].center, 10, green, -1);
+				Point newCircle = (minRect[i].center);
+				pointsOfInterest->push_back(newCircle);
 			}
 
 			// circle at the center
-			circle(*outputImage, minRect[i].center, 5, red, -1);
+			//circle(*outputImage, minRect[i].center, 5, red, -1);
 			// rotated rectangle
 			Point2f rect_points[4]; minRect[i].points( rect_points );
 			for( int j = 0; j < 4; j++ )
