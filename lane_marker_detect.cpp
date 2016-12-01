@@ -88,7 +88,7 @@ cv::Mat lane_marker_detect::canny_edge(cv::Mat gaussian_image) {
  *	cv::HoughLinesP(canny_image, lines, rho, theta, threshold, minLineLength, minLineLength);
  */
 cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat original, std::vector<lane_c> * lane_) {
-	std::cout<<"Start Hough"<<std::endl;
+	//std::cout<<"Start Hough"<<std::endl;
 	cv::Mat hough = original.clone();
 	static int l1 = 0, l2 = 0, l3 = 0, l4 = 0, l5 = 0, l6 = 0;
 	int threshold = 60;
@@ -137,8 +137,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		double rho = lines[i][0], theta = lines[i][1];
 		if(rho < 0){
 			if (theta > 1.64 && theta < 1.66){
-				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
-				std::cout<<"6: "<<theta<<" "<<rho<<std::endl;
+				//std::cout<<"6: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -158,8 +157,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				line_cnt += 1;
 			}
 			else if (theta > 1.74 && theta < 1.8){
-				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
-				std::cout<<"5: "<<theta<<" "<<rho<<std::endl;
+				//std::cout<<"5: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -179,8 +177,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				line_cnt += 1;
 			}
 			else if (theta > 2 && theta < 2.1){
-				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
-				std::cout<<"4: "<<theta<<" "<<rho<<std::endl;
+				//std::cout<<"4: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -202,8 +199,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		}
 		else if (rho > 0){
 			if(theta < 1.1 && theta > 0.8){
-				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
-				std::cout<<"3: "<<theta<<" "<<rho<<std::endl;
+				//std::cout<<"3: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -222,8 +218,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				line_cnt += 1;
 			}
 			else if(theta < 1.36 && theta > 1.3){
-				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
-				std::cout<<"2: "<<theta<<" "<<rho<<std::endl;
+				//std::cout<<"2: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -237,8 +232,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				line_cnt += 1;
 			}
 			else if(theta < 1.5 && theta > 1.43){
-				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
-				std::cout<<"1: "<<theta<<" "<<rho<<std::endl;
+				//std::cout<<"1: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -266,8 +260,8 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		center = temp.calculate_center_point(&line_[0], &line_[1]);
 		(*lane_).push_back(temp);
 		(*lane_)[0].def_lane(center, 1, &line_[0], &line_[1]);
-		std::cout<<get_number((*lane_)[0])<<std::endl;
-		cv:: putText(hough, text1, (*lane_)[0].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color1, 2);
+		//std::cout<<get_number((*lane_)[0])<<std::endl;
+		cv:: putText(hough, text1, (*lane_)[0].get_center_point(), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1.0, line_color1, 2);
 		lane_cnt += 1;
 	}
 	if(l2 && l3){
@@ -278,7 +272,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		center = temp.calculate_center_point(&line_[1], &line_[2]);
 		(*lane_).push_back(temp);
 		(*lane_)[1].def_lane(center, 2, &line_[1], &line_[2]);
-		std::cout<<get_number((*lane_)[1])<<std::endl;
+		//std::cout<<get_number((*lane_)[1])<<std::endl;
 		cv:: putText(hough, text2, (*lane_)[1].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color2, 2);
 		lane_cnt += 1;
 	}
@@ -290,7 +284,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		center = temp.calculate_center_point(&line_[2], &line_[3]);
 		(*lane_).push_back(temp);
 		(*lane_)[2].def_lane(center, 3, &line_[2], &line_[3]);
-		std::cout<<get_number((*lane_)[2])<<std::endl;
+		//std::cout<<get_number((*lane_)[2])<<std::endl;
 		cv:: putText(hough, text3, (*lane_)[2].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color3, 2);
 		lane_cnt += 1;
 	}
@@ -302,30 +296,31 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		center = temp.calculate_center_point(&line_[3], &line_[4]);
 		(*lane_).push_back(temp);
 		(*lane_)[3].def_lane(center, 4, &line_[3], &line_[4]);
-		std::cout<<get_number((*lane_)[3])<<std::endl;
+		//std::cout<<get_number((*lane_)[3])<<std::endl;
 		cv:: putText(hough, text4, (*lane_)[3].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color4, 2);
 		lane_cnt += 1;
 	}
 	if(l5 && l6){
-		cv::Point2d center;
+		cv::Point2d center, ref;
 		lane_c temp;
 		char text5[2];
 		std::sprintf(text5, "5");
+		ref.x = -10; ref.y = -5;
 		center = temp.calculate_center_point(&line_[4], &line_[5]);
 		(*lane_).push_back(temp);
 		(*lane_)[4].def_lane(center, 5, &line_[4], &line_[5]);
-		std::cout<<get_number((*lane_)[4])<<std::endl;
-		cv:: putText(hough, text5, (*lane_)[4].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color5, 2);
+		//std::cout<<get_number((*lane_)[4])<<std::endl;
+		cv:: putText(hough, text5, (*lane_)[4].get_center_point() + ref, cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color5, 2);
 		lane_cnt += 1;
 	}
 
 	if((frame_counter % 15) == 0){
 		l1 = 0; l2 = 0; l3 = 0; l4 = 0; l5 = 0; l6 = 0;
 		(*lane_).empty();
-		std::cout<<"Cleared!"<<std::endl;
+		//std::cout<<"Cleared!"<<std::endl;
 	}
 
-	std::cout<<"Detected "<<lane_cnt<<" lanes!"<<std::endl;
+	//std::cout<<"Detected "<<lane_cnt<<" lanes!"<<std::endl;
 
 	cv::line(hough, pt1, pt2, line_color1, line_thickness, cv::LINE_AA);
 	cv::line(hough, pt3, pt4, line_color2, line_thickness, cv::LINE_AA);
@@ -334,7 +329,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	cv::line(hough, pt9, pt10, line_color5, line_thickness, cv::LINE_AA);
 	cv::line(hough, pt11, pt12, line_color6, line_thickness, cv::LINE_AA);
 
-	std::cout<<"End Hough"<<std::endl;
+	//std::cout<<"End Hough"<<std::endl;
 	return hough;
 }
 
