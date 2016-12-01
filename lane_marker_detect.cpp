@@ -110,7 +110,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	 *	a, b, c = RGB values 0-255
 	 *	lineType = type of line that is to be used. See http://docs.opencv.org/3.1.0/d0/de1/group__core.html#gaf076ef45de481ac96e0ab3dc2c29a777
 	 */
-	cv::Point2d pt1, pt2, pt3, pt4, left_pt, cen_pt, right_pt, pt5, pt6, pt7, pt8, pt9, pt10, pt11, pt12;
+	cv::Point2d pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8, pt9, pt10, pt11, pt12;
 	cv::Scalar line_color1 = cv::Scalar(255, 0, 0); 	// BGR color Blue
 	cv::Scalar line_color2 = cv::Scalar(0, 255, 0); 	// Green
 	cv::Scalar line_color3 = cv::Scalar(0, 0, 255); 	// Red
@@ -118,7 +118,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	cv::Scalar line_color5 = cv::Scalar(255, 0, 255);	// Pink
 	cv::Scalar line_color6 = cv::Scalar(0, 255, 255);	// Yellow
 	int line_thickness = 4;
-	line_c line_[6];
+	static line_c line_[6];
 	int line_cnt = 0, lane_cnt = 0;
 	for (size_t i = 0; i < lines.size(); i++)
 	{
@@ -221,7 +221,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				l3 = rho;
 				line_cnt += 1;
 			}
-			else if(theta < 1.35 && theta > 1.3){
+			else if(theta < 1.36 && theta > 1.3){
 				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
 				std::cout<<"2: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
@@ -236,7 +236,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				l2 = rho;
 				line_cnt += 1;
 			}
-			else if(theta < 1.5 && theta > 1.4){
+			else if(theta < 1.5 && theta > 1.43){
 				//std::cout<<"rho: "<<rho<<"   "<<"theta: "<<theta<<std::endl;
 				std::cout<<"1: "<<theta<<" "<<rho<<std::endl;
 				double a = cos(theta), b = sin(theta);
@@ -261,46 +261,61 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	if(l1 && l2){
 		cv::Point2d center;
 		lane_c temp;
+		char text1[2];
+		std::sprintf(text1, "1");
 		center = temp.calculate_center_point(&line_[0], &line_[1]);
 		(*lane_).push_back(temp);
 		(*lane_)[0].def_lane(center, 1, &line_[0], &line_[1]);
 		std::cout<<get_number((*lane_)[0])<<std::endl;
+		cv:: putText(hough, text1, (*lane_)[0].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color1, 2);
 		lane_cnt += 1;
 	}
 	if(l2 && l3){
 		cv::Point2d center;
 		lane_c temp;
+		char text2[2];
+		std::sprintf(text2, "2");
 		center = temp.calculate_center_point(&line_[1], &line_[2]);
 		(*lane_).push_back(temp);
 		(*lane_)[1].def_lane(center, 2, &line_[1], &line_[2]);
 		std::cout<<get_number((*lane_)[1])<<std::endl;
+		cv:: putText(hough, text2, (*lane_)[1].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color2, 2);
 		lane_cnt += 1;
 	}
 	if(l3 && l4){
 		cv::Point2d center;
 		lane_c temp;
+		char text3[2];
+		std::sprintf(text3, "3");
 		center = temp.calculate_center_point(&line_[2], &line_[3]);
 		(*lane_).push_back(temp);
 		(*lane_)[2].def_lane(center, 3, &line_[2], &line_[3]);
 		std::cout<<get_number((*lane_)[2])<<std::endl;
+		cv:: putText(hough, text3, (*lane_)[2].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color3, 2);
 		lane_cnt += 1;
 	}
 	if(l4 && l5){
 		cv::Point2d center;
 		lane_c temp;
+		char text4[2];
+		std::sprintf(text4, "4");
 		center = temp.calculate_center_point(&line_[3], &line_[4]);
 		(*lane_).push_back(temp);
 		(*lane_)[3].def_lane(center, 4, &line_[3], &line_[4]);
 		std::cout<<get_number((*lane_)[3])<<std::endl;
+		cv:: putText(hough, text4, (*lane_)[3].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color4, 2);
 		lane_cnt += 1;
 	}
 	if(l5 && l6){
 		cv::Point2d center;
 		lane_c temp;
+		char text5[2];
+		std::sprintf(text5, "5");
 		center = temp.calculate_center_point(&line_[4], &line_[5]);
 		(*lane_).push_back(temp);
 		(*lane_)[4].def_lane(center, 5, &line_[4], &line_[5]);
 		std::cout<<get_number((*lane_)[4])<<std::endl;
+		cv:: putText(hough, text5, (*lane_)[4].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color5, 2);
 		lane_cnt += 1;
 	}
 

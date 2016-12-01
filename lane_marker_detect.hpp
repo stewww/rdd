@@ -103,13 +103,13 @@ public:
 			equal = true;
 		return equal;
 	};
-	cv::Point2d get_center_point(lane_c *lane){
-		return lane->center;
+	cv::Point2d get_center_point(){
+		return this->center;
 	};
 	cv::Point2d calculate_center_point(line_c *lt, line_c *rt){
 		cv::Point2d center, right, left;
 
-		left.y = 100, right.y = 100, center.y = 100;
+		left.y = 50, right.y = 50, center.y = 50;
 		left.x = lt->find_x(left.y);
 		right.x = rt->find_x(right.y);
 		center.x = (left.x + right.x) / 2;
