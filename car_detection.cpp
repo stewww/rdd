@@ -1,15 +1,24 @@
 #include "car_detection.hpp"
 #include "opencv2/opencv.hpp"
 #include "helper_opencv.hpp"
+#include "lane_marker_detect.hpp"
 
 /*** Trackbar variables ***/
 static int greyThreshold = 40;
-static const int greyThresholdMax = 200;
+static const int greyThresholdMax = 255;
 static string trackbarThresholdName = "Grey Threshold Trackbar";
 
 static int greyDiffInterval = 9;
 static const int greyDiffMax = 50;
 static const string trackbarGreyDiffName = "Grey Diff Trackbar";
+
+static int edgeDetectionGreyThreshold = 48;
+static const int edgeDetectionGreyThresholdMax = 255;
+static string trackbarEdgeDetectionThresholdName = "Edge Detection Grey Threshold Trackbar";
+
+static int inputImageVehicleCount = 1;
+static const int inputImageVehicleCountMax = 10;
+static const string trackbarInputImageVehicleCountName = "Vehicle Number Trackbar";
 
 /*** Window names ***/
 static const string windowName_greyThreshold = "Grey Threshold";
@@ -17,9 +26,16 @@ static const string windowName_greyDiff = "Grey Diff";
 static const string windowName_contours = "Contours";
 static const string windowName_contoursAndEllipses = "Contours and Ellipses";
 static const string windowName_InputImage = "Input Image";
+static const string windowName_InputImageUp = "Input Image Up";
+static const string windowName_InputImageDown = "Input Image Down";
+static const string windowName_InputImageLeft = "Input Image Left";
+static const string windowName_InputImageRight = "Input Image Right";
+static const string windowName_EdgeDetection = "Edge Detection";
+static const string windowName_EdgeDetectionGrey = "Edge Detection Grey";
 static const string windowName_CroppedImage = "Cropped Image";
 static const string windowName_prevGrey = "Prev Grey Image";
 static const string windowName_currGrey = "Current Grey Image";
+static const string windowName_SimpleColors = "Simple Colors";
 
 void detect_initDebugInfo(void)
 {
@@ -34,11 +50,28 @@ void detect_initDebugInfo(void)
  	namedWindow(windowName_contours);
  	moveWindow(windowName_contours, 100, 100);
 
- 	namedWindow(windowName_contoursAndEllipses);
- 	moveWindow(windowName_contoursAndEllipses, 1000, 500);
-
  	namedWindow(windowName_InputImage);
  	moveWindow(windowName_InputImage, 100, 100);
+ 	helper_trackbarSimple(trackbarInputImageVehicleCountName, windowName_InputImage, &inputImageVehicleCount, inputImageVehicleCountMax);
+
+ 	namedWindow(windowName_InputImageUp);
+ 	moveWindow(windowName_InputImageUp, 100, 100);
+
+ 	namedWindow(windowName_InputImageDown);
+ 	moveWindow(windowName_InputImageDown, 100, 100);
+
+ 	namedWindow(windowName_InputImageLeft);
+ 	moveWindow(windowName_InputImageLeft, 100, 100);
+
+ 	namedWindow(windowName_InputImageRight);
+ 	moveWindow(windowName_InputImageRight, 100, 100);
+
+ 	namedWindow(windowName_EdgeDetection);
+ 	moveWindow(windowName_EdgeDetection, 100, 100);
+
+ 	namedWindow(windowName_EdgeDetectionGrey);
+ 	moveWindow(windowName_EdgeDetectionGrey, 100, 100);
+	helper_trackbarSimple(trackbarEdgeDetectionThresholdName, windowName_EdgeDetectionGrey, &edgeDetectionGreyThreshold, edgeDetectionGreyThresholdMax);
 
  	namedWindow(windowName_CroppedImage);
  	moveWindow(windowName_CroppedImage, 100, 500);
@@ -50,26 +83,62 @@ void detect_initDebugInfo(void)
  	moveWindow(windowName_currGrey, 100, 100);
 }
 
-int detect_vehicles(vector<Vehicle_Information_S> * vehicles)
+static VideoCapture capture;
+static bool updateImage = false;
+static bool programStart = false;
+
+static bool openCapture(void)
 {
-	VideoCapture capture;
-	capture.open("testvid00.mp4");
+	capture.open("ir_testvid01.mp4");
 
 	if (!capture.isOpened())
 	{
 		printf("uh oh?\n");
-		return -1;
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+static bool waitForNextFrame(void)
+{
+	char key = waitKey(1);
+	if (key  == ' ')
+	{
+		updateImage = !updateImage;
+		if (updateImage)
+		{
+			programStart = true;
+			printf("Running video\n");
+		}
+		else
+		{
+			printf("Pausing video\n");
+		}
+	}
+	else if (key == 'q')
+	{
+		return false;
+	}
+	return true;
+}
+
+int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
+{
+	if (!openCapture())
+	{
+		return false;
 	}
 
 	while (1)
 	{
 		static Mat inputImage;
 		static Mat croppedImage;
-		static bool updateImage = false;
 		static bool start = true;
 		bool validDiff = false;
 		static uint32_t counter = 0;
-
 
 		if (updateImage || start)
 		{
@@ -99,7 +168,7 @@ int detect_vehicles(vector<Vehicle_Information_S> * vehicles)
 					{
 						imshow(windowName_greyThreshold, threshold_diff);
 						threshold_diff.copyTo(contours_drawing);
-						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse);
+						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse, 10,15,300,400);
 						imshow(windowName_contours, contours_drawing);
 						imshow(windowName_contoursAndEllipses, contoursAndEllipse);
 					}
@@ -121,25 +190,202 @@ int detect_vehicles(vector<Vehicle_Information_S> * vehicles)
 			}
 
 		}
-
-		char key = waitKey(1);
-		if (key  == ' ')
+		// If we need to quit, then quit
+		if (!waitForNextFrame())
 		{
-			updateImage = !updateImage;
-			if (updateImage)
-			{
-				printf("Running video\n");
-			}
-			else
-			{
-				printf("Pausing video\n");
-			}
-		}
-		else if (key == 'q')
-		{
-			return 0;
+			return false;
 		}
 	}
+}
 
+std::vector<lane_c> LANE_;
 
+int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
+{
+	if (!openCapture())
+	{
+		return false;
+	}
+
+	lane_marker_detect LD; //new
+	LD.set_up(); //new
+
+	while (1)
+	{
+		static Mat inputImage;
+		static Mat inputImageUp;
+		static Mat inputImageDown;
+		static Mat inputImageLeft;
+		static Mat inputImageRight;
+		static Mat edgeDetectionImage;
+		static Mat edgeDetectionImageGrey;
+		static Mat simpleColorImage;
+		static Mat temp1;
+		static Mat contoursAndEllipse;
+		static Mat laneTracking;
+		static bool start = true;
+		static int edgeWidth = 1;
+
+		setMouseCallback(windowName_InputImage, clickAndDrag, &capture);
+
+		if (updateImage || start)
+		{
+			const int division = 32;
+			capture.read(inputImage);
+
+			helper_cropImage(&inputImage, &inputImage);
+			laneTracking = LD.detect(&inputImage, &LANE_); //new
+			//cvtColor(inputImage, inputImage, CV_BGR2HSV);
+
+			inputImage.copyTo(simpleColorImage);
+
+			// Simple color reduction
+			colorReduce(simpleColorImage, division);
+
+			// Zero out all Mats
+			inputImageUp = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			//inputImageDown = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			//inputImageLeft = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			//inputImageRight = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			if (start)
+			{
+				edgeDetectionImage = Mat::zeros(simpleColorImage.size(), simpleColorImage.type());
+			}
+
+			// Shift all Mats
+			simpleColorImage(cv::Rect(0,edgeWidth, simpleColorImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageUp(cv::Rect(0,0,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
+			//simpleColorImage(cv::Rect(0,0, simpleColorImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageDown(cv::Rect(0,edgeWidth,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
+			//simpleColorImage(cv::Rect(edgeWidth,0, simpleColorImage.cols-edgeWidth,simpleColorImage.rows)).copyTo(inputImageLeft(cv::Rect(0,0,simpleColorImage.cols-edgeWidth,simpleColorImage.rows)));
+			//simpleColorImage(cv::Rect(0,0, simpleColorImage.cols-edgeWidth,simpleColorImage.rows)).copyTo(inputImageRight(cv::Rect(edgeWidth,0,simpleColorImage.cols-edgeWidth,simpleColorImage.rows)));
+
+			// Take absolute diff of each input image
+			absdiff(simpleColorImage, inputImageUp, inputImageUp);
+			//absdiff(simpleColorImage, inputImageDown, inputImageDown);
+			//absdiff(simpleColorImage, inputImageLeft, inputImageLeft);
+			//absdiff(simpleColorImage, inputImageRight, inputImageRight);
+
+			double filterSize = 4;
+			// Add the diffs together (average for now)
+			Scalar numerator = Scalar(filterSize - 1, (filterSize - 1) + 0.5, filterSize - 1);
+			Scalar denominator = Scalar(filterSize, filterSize, filterSize);
+			if (!start)
+			{
+				multiply(edgeDetectionImage, numerator, edgeDetectionImage);
+				divide(edgeDetectionImage, denominator, edgeDetectionImage);
+
+				divide(inputImageUp, denominator, inputImageUp);
+			}
+
+			add(edgeDetectionImage, inputImageUp, edgeDetectionImage);
+			//add(edgeDetectionImage, inputImageDown, edgeDetectionImage);
+			//add(edgeDetectionImage, inputImageLeft, edgeDetectionImage);
+			//add(edgeDetectionImage, inputImageRight, edgeDetectionImage);
+
+//			inRange(edgeDetectionImage, Scalar(240, edgeDetectionGreyThreshold, edgeDetectionGreyThreshold), Scalar(255, 255, 255), edgeDetectionImageGrey);
+
+			// Threshold from color diff, as it has more information
+			threshold(edgeDetectionImage, edgeDetectionImageGrey, edgeDetectionGreyThreshold, edgeDetectionGreyThresholdMax, THRESH_BINARY);
+
+			// Convert the diff into greyscale
+			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
+
+			edgeDetectionImageGrey.copyTo(temp1);
+			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,1,10,300,400);
+			//drawBoundingContours(temp1, contoursAndEllipse);
+			// Show Images
+			//imshow(windowName_InputImage, simpleColorImage);
+//			imshow(windowName_InputImageUp, inputImageUp);
+//			imshow(windowName_InputImageDown, inputImageDown);
+//			imshow(windowName_InputImageLeft, inputImageLeft);
+//			imshow(windowName_InputImageRight, inputImageRight);
+			//imshow(windowName_EdgeDetection, edgeDetectionImage);
+			//imshow(windowName_EdgeDetectionGrey, edgeDetectionImageGrey);
+			//imshow(windowName_contoursAndEllipses, contoursAndEllipse);
+			Mat D;
+			add(inputImage, laneTracking, D);
+			add(D, contoursAndEllipse, D);
+			imshow("LOOKATME", D);
+			start = false;
+		}
+		// If we need to quit, then quit
+		if (!waitForNextFrame())
+		{
+			return false;
+		}
+	}
+}
+
+int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
+{
+	if (!openCapture())
+	{
+		return false;
+	}
+
+	static Mat actualInputImage;
+	static Mat inputImage;
+	static Mat channel[3];
+	static Mat simpleColorImage;
+	static Mat edgeDetectionImageGrey;
+	static Mat temp1;
+	static Mat contoursAndEllipse;
+	static bool start = true;
+
+	setCSVDump(windowName_InputImage, "IDK.csv", &inputImage);
+	while (1)
+	{
+		const int division = 32;
+
+		if (updateImage || start)
+		{
+			capture.read(actualInputImage);
+			actualInputImage.copyTo(inputImage);
+			start = false;
+
+			helper_cropImage(&inputImage, &inputImage);
+
+			// HSV?
+			cvtColor(inputImage, inputImage, CV_BGR2HSV);
+
+		}
+		if (programStart)
+		{
+			inputImage.copyTo(simpleColorImage);
+
+			// Simple color reduction
+			colorReduce(simpleColorImage, division);
+
+			simpleColorImage.copyTo(edgeDetectionImageGrey);
+
+			// Convert to greyscale
+			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
+
+	#if 0
+			Canny(edgeDetectionImageGrey, edgeDetectionImageGrey, division - 1, division + 1);
+	#else
+			edgeDetectionImageGrey.copyTo(contoursAndEllipse);
+			drawBoundingContours(edgeDetectionImageGrey, contoursAndEllipse);
+	#endif
+
+			// Show Images
+			imshow("Actual input image", actualInputImage);
+			imshow(windowName_InputImage, inputImage);
+			imshow(windowName_SimpleColors, simpleColorImage);
+			imshow(windowName_EdgeDetectionGrey, edgeDetectionImageGrey);
+			imshow(windowName_contoursAndEllipses, contoursAndEllipse);
+			// If we need to quit, then quit
+			if (!waitForNextFrame())
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// If we need to quit, then quit
+			if (!waitForNextFrame())
+			{
+				return false;
+			}
+		}
+	}
 }

@@ -5,13 +5,13 @@
 using namespace cv;
 using namespace std;
 
-#define DETECT_VEHICLES 0
+#define DETECT_VEHICLES 1
 
 int main( int argc, char** argv )
 {
 #if DETECT_VEHICLES
 	vector<Vehicle_Information_S> vehicles;
 	detect_initDebugInfo();
-	return detect_vehicles(&vehicles);
+	return detect_vehicles_edgeDetection(&vehicles);
 #endif
 }
