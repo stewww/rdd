@@ -255,10 +255,10 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	if(l1 && l2){
 		cv::Point2d center;
 		lane_c temp;
-		char text1[2];
+		static char text1[2];
 		std::sprintf(text1, "1");
 		center = temp.calculate_center_point(&line_[0], &line_[1]);
-		(*lane_).push_back(temp);
+		//(*lane_).push_back(temp);
 		(*lane_)[0].def_lane(center, 1, &line_[0], &line_[1]);
 		//std::cout<<get_number((*lane_)[0])<<std::endl;
 		cv:: putText(hough, text1, (*lane_)[0].get_center_point(), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1.0, line_color1, 2);
@@ -267,10 +267,10 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	if(l2 && l3){
 		cv::Point2d center;
 		lane_c temp;
-		char text2[2];
+		static char text2[2];
 		std::sprintf(text2, "2");
 		center = temp.calculate_center_point(&line_[1], &line_[2]);
-		(*lane_).push_back(temp);
+		//(*lane_).push_back(temp);
 		(*lane_)[1].def_lane(center, 2, &line_[1], &line_[2]);
 		//std::cout<<get_number((*lane_)[1])<<std::endl;
 		cv:: putText(hough, text2, (*lane_)[1].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color2, 2);
@@ -279,10 +279,10 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	if(l3 && l4){
 		cv::Point2d center;
 		lane_c temp;
-		char text3[2];
+		static char text3[2];
 		std::sprintf(text3, "3");
 		center = temp.calculate_center_point(&line_[2], &line_[3]);
-		(*lane_).push_back(temp);
+		//(*lane_).push_back(temp);
 		(*lane_)[2].def_lane(center, 3, &line_[2], &line_[3]);
 		//std::cout<<get_number((*lane_)[2])<<std::endl;
 		cv:: putText(hough, text3, (*lane_)[2].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color3, 2);
@@ -291,10 +291,10 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	if(l4 && l5){
 		cv::Point2d center;
 		lane_c temp;
-		char text4[2];
+		static char text4[2];
 		std::sprintf(text4, "4");
 		center = temp.calculate_center_point(&line_[3], &line_[4]);
-		(*lane_).push_back(temp);
+		//(*lane_).push_back(temp);
 		(*lane_)[3].def_lane(center, 4, &line_[3], &line_[4]);
 		//std::cout<<get_number((*lane_)[3])<<std::endl;
 		cv:: putText(hough, text4, (*lane_)[3].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color4, 2);
@@ -303,11 +303,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	if(l5 && l6){
 		cv::Point2d center, ref;
 		lane_c temp;
-		char text5[2];
+		static char text5[2];
 		std::sprintf(text5, "5");
 		ref.x = -10; ref.y = -5;
 		center = temp.calculate_center_point(&line_[4], &line_[5]);
-		(*lane_).push_back(temp);
+		//(*lane_).push_back(temp);
 		(*lane_)[4].def_lane(center, 5, &line_[4], &line_[5]);
 		//std::cout<<get_number((*lane_)[4])<<std::endl;
 		cv:: putText(hough, text5, (*lane_)[4].get_center_point() + ref, cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color5, 2);
@@ -316,7 +316,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 
 	if((frame_counter % 15) == 0){
 		l1 = 0; l2 = 0; l3 = 0; l4 = 0; l5 = 0; l6 = 0;
-		(*lane_).empty();
+		//(*lane_).empty();
 		//std::cout<<"Cleared!"<<std::endl;
 	}
 
