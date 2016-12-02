@@ -89,7 +89,7 @@ static bool programStart = false;
 
 static bool openCapture(void)
 {
-	capture.open("ir_testvid01.mp4");
+	capture.open("../videos/ir_testvid01.mp4");
 
 	if (!capture.isOpened())
 	{
@@ -198,7 +198,7 @@ int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
 	}
 }
 
-std::vector<lane_c> LANE_;
+std::vector<lane_c> LANE_(6);
 
 int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 {
