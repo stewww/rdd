@@ -33,7 +33,7 @@ typedef std::vector<cv::Vec4i> Hier;
 void printExternalContours(cv::Mat img, Cont const& contours, Hier const& hierarchy, int const idx)
 {
     //for every contour of the same hierarchy level
-    for(int i = idx; i >= 0; i = hierarchy[i][0])
+    for(unsigned int i = idx; i >= 0; i = hierarchy[i][0])
     {
         //print it
         cv::drawContours(img, contours, i, cv::Scalar(255));
@@ -47,7 +47,9 @@ void printExternalContours(cv::Mat img, Cont const& contours, Hier const& hierar
     }
 }
 
-void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minHeight, int minWidth, int maxHeight, int maxWidth)
+void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage, vector<lane_c> * lanes,
+		                                     int minHeight, int minWidth, int maxHeight, int maxWidth,
+											 vector<Vehicle_Information_S> * vehicles)
 {
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
@@ -58,7 +60,9 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 	vector<RotatedRect> minRect( contours.size() );
 	vector<RotatedRect> minEllipse( contours.size() );
 
-	for( int i = 0; i < contours.size(); i++ )
+	//const int vehicleHeight =
+
+	for(unsigned int i = 0; i < contours.size(); i++ )
 	{
 
 		minRect[i] = minAreaRect( Mat(contours[i]));
@@ -70,16 +74,18 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 
 	/// Draw contours + rotated rects + ellipses
 	*outputImage = Mat::zeros( inputImage->size(), CV_8UC3 );
-	for( int i = 0; i< contours.size(); i++ )
+	for(unsigned int i = 0; i< contours.size(); i++ )
 	{
-		// Only use large bounding rectangles
+		// Maximum a contour can be tilted to qualify as a vehicle must be less than 90
+		const int maxTiltVehicleContour = 5;
+		// Only use large bounding rectangles that are horizontal-ish
 		if (minRect[i].size.height > minHeight && minRect[i].size.width > minWidth &&
-			minRect[i].size.height < maxHeight && minRect[i].size.width < maxWidth)
+			minRect[i].size.height < maxHeight && minRect[i].size.width < maxWidth &&
+			(abs(helper_getRotatedRect180Deg(minRect[i]) - 90) < maxTiltVehicleContour))
 		{
-			Scalar red = Scalar(0, 0, 255);
 			Scalar green = Scalar(0, 255, 0);
-			Scalar blue = Scalar(255, 0, 0);
 			Scalar white = Scalar(255, 255, 255);
+			Rect currentRect = minRect[i].boundingRect();
 			// bounding contour
 			drawContours( *outputImage , contours, i, white, 1, 8, vector<Vec4i>(), 0, Point() );
 			//printExternalContours(*outputImage, contours, hierarchy, 0);
@@ -88,15 +94,16 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 
 			// If this is a candidate for a vehicle (more than x number of bounding rectangles intersect, then color the circle green
 			int intersections = 0;
-			for(int rectIndex = 0; rectIndex < contours.size(); rectIndex++)
+			for(unsigned int rectIndex = 0; rectIndex < contours.size(); rectIndex++)
 			{
+				Rect comparedRect = minRect[rectIndex].boundingRect();
 #if 0
 				// If this rectangle intersects and is not the same rectangle as the rectangle in question
 				if ((rectIndex != i) && ((minRect[rectIndex].boundingRect() & minRect[i].boundingRect()).area() > 0))
 #endif
-				// If the rectangle stacks up vertically with another rectangle (approximately)
-				if ((rectIndex != i) && (abs(minRect[rectIndex].boundingRect().x - minRect[i].boundingRect().x) < 4) &&
-										(abs(minRect[rectIndex].boundingRect().y - minRect[i].boundingRect().y) < 50))
+				// If the rectangle stacks up vertically with another rectangle (approximately) and is lower than the object
+				if ((rectIndex != i) && (abs((comparedRect.x + comparedRect.width / 2)- (currentRect.x + currentRect.width / 2)) < 10) &&
+										(abs(comparedRect.y - currentRect.y) < 50))
 				{
 					intersections++;
 				}
@@ -105,6 +112,39 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 			if (intersections >= intersectionsRequired)
 			{
 				circle(*outputImage, minRect[i].center, 10, green, -1);
+
+				// Check if the "vehicle" already exists vertically aligned, add/modify as necessary
+				const int maxVehicleContourCenterOffsetHorizontal = 20;
+				const int maxVehicleContourHeight = 50;
+				bool addVehicle = true;
+				for (unsigned int vehicleIdx = 0; vehicleIdx < vehicles->size(); vehicleIdx++)
+				{
+					// Vehicle aligns vertically with another vehicle and is within a reasonable vertical distance
+					if ((abs((currentRect.x + currentRect.width / 2) - vehicles->at(vehicleIdx).actualPosX) < maxVehicleContourCenterOffsetHorizontal) &&
+						(abs((currentRect.y + currentRect.height / 2) - vehicles->at(vehicleIdx).actualPosY) < maxVehicleContourHeight))
+					{
+						addVehicle = false;
+						// Check if we need to modify this contour (take the lowest as it is the most reliable)
+						if (currentRect.y > vehicles->at(vehicleIdx).actualPosY)
+						{
+							vehicles->at(vehicleIdx).actualPosX = currentRect.x + currentRect.width / 2;
+							vehicles->at(vehicleIdx).actualPosY = currentRect.y + currentRect.height / 2;
+						}
+						break;
+					}
+				}
+				// If we need to add this vehicle, add it here
+				if (addVehicle)
+				{
+					Vehicle_Information_S newVehicle;
+					newVehicle.actualPosX = currentRect.x + currentRect.width / 2;
+					newVehicle.actualPosY = currentRect.y + currentRect.height / 2;
+
+					// For now, set the extrapolated x/y position to the actual x/y position
+					newVehicle.extrapolatedXPos = currentRect.x + currentRect.width / 2;
+					newVehicle.extrapolatedYPos = currentRect.y + currentRect.height / 2;
+					vehicles->push_back(newVehicle);
+				}
 			}
 
 			// circle at the center
@@ -115,6 +155,37 @@ void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int m
 				line( *outputImage , rect_points[j], rect_points[(j+1)%4], white, 1, 8 );
 		}
 	}
+	Scalar red = Scalar(0, 0, 255);
+	// Point out all vehicles with red
+	//printf("Size of vehicles array: %i\n", vehicles->size());
+	for (unsigned int vehicleIdx = 0; vehicleIdx < vehicles->size(); vehicleIdx++)
+	{
+		Point2d vehiclePoint;
+		vehiclePoint.x = vehicles->at(vehicleIdx).actualPosX;
+		vehiclePoint.y = vehicles->at(vehicleIdx).actualPosY;
+		circle(*outputImage, vehiclePoint, 15, red, -1);
+		bool laneFound = false;
+		for (unsigned int laneIdx = 0; laneIdx < lanes->size(); laneIdx++)
+		{
+			// If this is the lane the vehicle belongs to, assign the respective number
+			if (lanes->at(laneIdx).in_lane(vehiclePoint))
+			{
+				vehicles->at(vehicleIdx).lane = lanes->at(laneIdx).get_number();
+				laneFound = true;
+				break;
+			}
+		}
+		if (!laneFound)
+		{
+			vehicles->at(vehicleIdx).lane = -1;
+		}
+	}
+}
+
+float helper_getRotatedRect180Deg(RotatedRect rectangle)
+{
+	float angle = (rectangle.size.width < rectangle.size.height) ? rectangle.angle + 180 : rectangle.angle+90;
+	return angle;
 }
 
 void colorReduce(Mat& image, int div)
@@ -192,7 +263,7 @@ void drawBoundingContours(Mat& input, Mat& output)
     vector< Vec4i > hierarchy;
     findContours(output, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
 
-    for( int i = 0; i< contours.size(); i=hierarchy[i][0] ) 	// iterate through each contour.
+    for(unsigned int i = 0; i< contours.size(); i=hierarchy[i][0] ) 	// iterate through each contour.
     {
         Rect r= boundingRect(contours[i]);
         if ((r.width < maxWidth) &&								// Must be smaller than a large portion of the screen

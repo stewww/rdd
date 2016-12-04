@@ -130,8 +130,8 @@ public:
 
 		return inside;
 	};
-	int get_number(lane_c lane){
-		return lane.number;
+	int get_number(void){
+		return number;
 	};
 	~lane_c(){};
 

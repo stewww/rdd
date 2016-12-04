@@ -6,6 +6,9 @@ using namespace cv;
 using namespace std;
 
 #define DETECT_VEHICLES 1
+#define MAX_VEHICLES	20
+
+std::vector<Vehicle_Information_S> vehicles(MAX_VEHICLES);
 
 int main( int argc, char** argv )
 {

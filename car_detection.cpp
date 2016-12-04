@@ -89,7 +89,7 @@ static bool programStart = false;
 
 static bool openCapture(void)
 {
-	capture.open("../videos/ir_testvid01.mp4");
+	capture.open("ir_testvid01.mp4");
 
 	if (!capture.isOpened())
 	{
@@ -125,6 +125,7 @@ static bool waitForNextFrame(void)
 	return true;
 }
 
+#if 0
 int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
 {
 	if (!openCapture())
@@ -168,7 +169,7 @@ int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
 					{
 						imshow(windowName_greyThreshold, threshold_diff);
 						threshold_diff.copyTo(contours_drawing);
-						helper_drawEllipseAroundContours(&contours_drawing, &contoursAndEllipse, 10,15,300,400);
+						helper_drawEllipseAroundVehicleContours(&contours_drawing, &contoursAndEllipse, 10,15,300,400);
 						imshow(windowName_contours, contours_drawing);
 						imshow(windowName_contoursAndEllipses, contoursAndEllipse);
 					}
@@ -197,8 +198,10 @@ int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles)
 		}
 	}
 }
+#endif // 0
 
-std::vector<lane_c> LANE_(6);
+#define MAX_LANES		6
+std::vector<lane_c> LANE_(MAX_LANES);
 
 int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 {
@@ -209,6 +212,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 
 	lane_marker_detect LD; //new
 	LD.set_up(); //new
+	setMouseCallback(windowName_InputImage, clickAndDrag, &capture);
 
 	while (1)
 	{
@@ -221,17 +225,19 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 		static Mat edgeDetectionImageGrey;
 		static Mat simpleColorImage;
 		static Mat temp1;
-		static Mat contoursAndEllipse;
+		static Mat vehicleContoursAndEllipses;
 		static Mat laneTracking;
 		static bool start = true;
 		static int edgeWidth = 1;
 
-		setMouseCallback(windowName_InputImage, clickAndDrag, &capture);
-
 		if (updateImage || start)
 		{
+
 			const int division = 32;
 			capture.read(inputImage);
+
+			// Clear all vehicle objects
+			vehicles->clear();
 
 			helper_cropImage(&inputImage, &inputImage);
 			laneTracking = LD.detect(&inputImage, &LANE_); //new
@@ -254,7 +260,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 
 			// Shift all Mats
 			simpleColorImage(cv::Rect(0,edgeWidth, simpleColorImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageUp(cv::Rect(0,0,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
-			//simpleColorImage(cv::Rect(0,0, simpleColorImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageDown(cv::Rect(0,edgeWidth,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
+			//simpleColorImage(cv::Rect(0,0, simpleColocapturerImage.cols,simpleColorImage.rows-edgeWidth)).copyTo(inputImageDown(cv::Rect(0,edgeWidth,simpleColorImage.cols,simpleColorImage.rows-edgeWidth)));
 			//simpleColorImage(cv::Rect(edgeWidth,0, simpleColorImage.cols-edgeWidth,simpleColorImage.rows)).copyTo(inputImageLeft(cv::Rect(0,0,simpleColorImage.cols-edgeWidth,simpleColorImage.rows)));
 			//simpleColorImage(cv::Rect(0,0, simpleColorImage.cols-edgeWidth,simpleColorImage.rows)).copyTo(inputImageRight(cv::Rect(edgeWidth,0,simpleColorImage.cols-edgeWidth,simpleColorImage.rows)));
 
@@ -290,7 +296,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			cvtColor(edgeDetectionImageGrey, edgeDetectionImageGrey, CV_BGR2GRAY);
 
 			edgeDetectionImageGrey.copyTo(temp1);
-			helper_drawEllipseAroundContours(&temp1, &contoursAndEllipse,1,10,300,400);
+			helper_drawEllipseAroundVehicleContours(&temp1, &vehicleContoursAndEllipses, &LANE_, 1,10,300,400, vehicles);
 			//drawBoundingContours(temp1, contoursAndEllipse);
 			// Show Images
 			//imshow(windowName_InputImage, simpleColorImage);
@@ -303,7 +309,16 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			//imshow(windowName_contoursAndEllipses, contoursAndEllipse);
 			Mat D;
 			add(inputImage, laneTracking, D);
-			add(D, contoursAndEllipse, D);
+			add(D, vehicleContoursAndEllipses, D);
+			for (unsigned int x = 0; x < vehicles->size(); x++)
+			{
+				Vehicle_Information_S vehicle = vehicles->at(x);
+				if (vehicle.lane != -1)
+				{
+					printf("Time: %f, PosX: %i, PosY: %i, Lane: %i\n", capture.get(CV_CAP_PROP_POS_MSEC),
+							vehicle.extrapolatedXPos, vehicle.extrapolatedYPos, vehicle.lane);
+				}
+			}
 			imshow("LOOKATME", D);
 			start = false;
 		}
@@ -315,6 +330,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 	}
 }
 
+#if 0
 int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 {
 	if (!openCapture())
@@ -389,3 +405,4 @@ int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles)
 		}
 	}
 }
+#endif // 0
