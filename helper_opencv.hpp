@@ -2,6 +2,8 @@
 #define HELPER_OPENCV_HPP_
 
 #include "opencv2/opencv.hpp"
+#include "lane_marker_detect.hpp"
+#include "car_detection.hpp"
 using namespace cv;
 using namespace std;
 
@@ -54,8 +56,13 @@ void helper_stopCounter(idkDataType_S * counterStructPtr);
 //crops main image
 void helper_cropImage(Mat * inputImage, Mat * croppedImage);
 
-// creates ellipses around contours
-void helper_drawEllipseAroundContours(Mat * inputImage, Mat * outputImage, int minHeight, int minWidth, int maxHeight, int maxWidth);
+// creates ellipses around contours and populates the vehicle objects
+void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage, vector<lane_c> * lanes,
+		                                     int minHeight, int minWidth, int maxHeight, int maxWidth,
+											 vector<Vehicle_Information_S> * vehicles);
+
+/* 0 for vertical, 90 for horizontal, 45 tilted left /, 135 = tilted right \ */
+float helper_getRotatedRect180Deg(RotatedRect rectangle);
 
 // Reduces the color gradient of the image
 void colorReduce(Mat& image, int div=64);

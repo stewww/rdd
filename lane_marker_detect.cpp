@@ -438,7 +438,7 @@ cv::Mat lane_marker_detect::detect(cv::Mat *vid_frame, std::vector<lane_c> * lan
 
 	//noncrop_original = *vid_frame;
 	original = *vid_frame;
-	std::cout<<"Frame no. "<<frame_counter<<std::endl;
+	//std::cout<<"Frame no. "<<frame_counter<<std::endl;
 	//cropImage(&noncrop_original, &original, p_one, p_two);
 	cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
 	gray.copyTo(gaussian_image);
