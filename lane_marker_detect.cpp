@@ -119,6 +119,8 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	cv::Scalar line_color6 = cv::Scalar(0, 255, 255);	// Yellow
 	int line_thickness = 4;
 	static line_c line_[6];
+	static double rho1[5], rho2[5], rho3[5], rho4[5], rho5[5], rho6[5];
+	static double theta1[5], theta2[5], theta3[5], theta4[5], theta5[5], theta6[5];
 	int line_cnt = 0, lane_cnt = 0;
 	for (size_t i = 0; i < lines.size(); i++)
 	{
@@ -138,6 +140,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		if(rho < 0){
 			if (theta > 1.64 && theta < 1.66){
 				//std::cout<<"6: "<<theta<<" "<<rho<<std::endl;
+				cir_queue_push(&rho6[0], rho);
+				cir_queue_push(&theta6[0], theta);
+				rho = cir_queue_average(&rho6[0], 5);
+				theta = cir_queue_average(&theta6[0], 5);
+
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -158,6 +165,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 			}
 			else if (theta > 1.74 && theta < 1.8){
 				//std::cout<<"5: "<<theta<<" "<<rho<<std::endl;
+				cir_queue_push(&rho5[0], rho);
+				cir_queue_push(&theta5[0], theta);
+				rho = cir_queue_average(&rho5[0], 5);
+				theta = cir_queue_average(&theta5[0], 5);
+
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -178,6 +190,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 			}
 			else if (theta > 2 && theta < 2.1){
 				//std::cout<<"4: "<<theta<<" "<<rho<<std::endl;
+				cir_queue_push(&rho4[0], rho);
+				cir_queue_push(&theta4[0], theta);
+				rho = cir_queue_average(&rho4[0], 5);
+				theta = cir_queue_average(&theta4[0], 5);
+
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -200,6 +217,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		else if (rho > 0){
 			if(theta < 1.1 && theta > 0.8){
 				//std::cout<<"3: "<<theta<<" "<<rho<<std::endl;
+				cir_queue_push(&rho3[0], rho);
+				cir_queue_push(&theta3[0], theta);
+				rho = cir_queue_average(&rho3[0], 5);
+				theta = cir_queue_average(&theta3[0], 5);
+
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -219,6 +241,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 			}
 			else if(theta < 1.36 && theta > 1.3){
 				//std::cout<<"2: "<<theta<<" "<<rho<<std::endl;
+				cir_queue_push(&rho2[0], rho);
+				cir_queue_push(&theta2[0], theta);
+				rho = cir_queue_average(&rho2[0], 5);
+				theta = cir_queue_average(&theta2[0], 5);
+
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -233,6 +260,11 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 			}
 			else if(theta < 1.5 && theta > 1.43){
 				//std::cout<<"1: "<<theta<<" "<<rho<<std::endl;
+				cir_queue_push(&rho1[0], rho);
+				cir_queue_push(&theta1[0], theta);
+				rho = cir_queue_average(&rho1[0], 5);
+				theta = cir_queue_average(&theta1[0], 5);
+
 				double a = cos(theta), b = sin(theta);
 				double x0 = a*rho, y0 = b*rho;
 
@@ -445,4 +477,19 @@ void lane_marker_detect::cropImage(cv::Mat * inputImage, cv::Mat * croppedImage,
 	box.y = std::min(one.y, two.y);
 
 	*croppedImage = (*inputImage)(box);
+}
+
+double lane_marker_detect::cir_queue_average(double * vp, int size)
+{
+	double avg = 0, total = 0;
+	for (int i = 0; i < size; i++){
+		total += *(vp + i);
+	}
+	avg = total/size;
+	return avg;
+}
+void lane_marker_detect::cir_queue_push(double * vp, double value)
+{
+	int pos = frame_counter % 5;
+	*(vp + pos) = value;
 }
