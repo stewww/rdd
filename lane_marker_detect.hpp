@@ -116,10 +116,10 @@ public:
 
 		return center;
 	};
-	bool in_lane(cv::Point2d point, lane_c *lane){
+	bool in_lane(cv::Point2d point){
 		bool inside = false;
 		cv::Point2d left_p, right_p;
-		line_c left_l = lane->left, right_l = lane->right;
+		line_c left_l = this->left, right_l = this->right;
 
 		left_p.y = point.y;
 		right_p.y = point.y;
@@ -148,6 +148,8 @@ public:
 	void cropImage(cv::Mat * inputImage, cv::Mat * croppedImage, cv::Point one, cv::Point two);
 	/*void*/ cv::Mat detect(cv::Mat *vid_frame, std::vector<lane_c> * lane_);
 	void show_windows(cv::Mat *hough_image, cv::Mat *canny_image, cv::Mat *gaussian_image, cv::Mat *original);
+	double cir_queue_average(double * vp, int size);
+	void cir_queue_push(double * vp, double value);
 	cv::Mat gaussian_blur(cv::Mat image);
 	cv::Mat canny_edge(cv::Mat gaussian_image);
 	cv::Mat sobel_edge(cv::Mat gaussian_image);
