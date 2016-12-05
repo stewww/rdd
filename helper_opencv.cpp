@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 static FILE * outputFile;
+#define DEBUG_INFO_ENABLED	0
 
 void helper_cropImage(Mat * inputImage, Mat * croppedImage)
 {
@@ -83,14 +84,18 @@ void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage
 			minRect[i].size.height < maxHeight && minRect[i].size.width < maxWidth &&
 			(abs(helper_getRotatedRect180Deg(minRect[i]) - 90) < maxTiltVehicleContour))
 		{
+#if DEBUG_INFO_ENABLED
 			Scalar green = Scalar(0, 255, 0);
 			Scalar white = Scalar(255, 255, 255);
+#endif // DEBUG_INFO_ENABLED
 			Rect currentRect = minRect[i].boundingRect();
+#if DEBUG_INFO_ENABLED
 			// bounding contour
 			drawContours( *outputImage , contours, i, white, 1, 8, vector<Vec4i>(), 0, Point() );
 			//printExternalContours(*outputImage, contours, hierarchy, 0);
 			// bounding ellipse
 			ellipse( *outputImage , minEllipse[i], white, 2, 8 );
+#endif // DEBUG_INFO_ENABLED
 
 			// If this is a candidate for a vehicle (more than x number of bounding rectangles intersect, then color the circle green
 			int intersections = 0;
@@ -111,7 +116,9 @@ void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage
 			const int intersectionsRequired = 2;
 			if (intersections >= intersectionsRequired)
 			{
+#if DEBUG_INFO_ENABLED
 				circle(*outputImage, minRect[i].center, 10, green, -1);
+#endif // DEBUG_INFO_ENABLED
 
 				// Check if the "vehicle" already exists vertically aligned, add/modify as necessary
 				const int maxVehicleContourCenterOffsetHorizontal = 20;
@@ -150,9 +157,11 @@ void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage
 			// circle at the center
 			//circle(*outputImage, minRect[i].center, 5, red, -1);
 			// rotated rectangle
+#if DEBUG_INFO_ENABLED
 			Point2f rect_points[4]; minRect[i].points( rect_points );
 			for( int j = 0; j < 4; j++ )
 				line( *outputImage , rect_points[j], rect_points[(j+1)%4], white, 1, 8 );
+#endif // DEBUG_INFO_ENABLED
 		}
 	}
 	Scalar red = Scalar(0, 0, 255);

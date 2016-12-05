@@ -11,6 +11,7 @@
 #define stdhough 1
 #define hsv 1
 #define binarize 1
+#define DEBUG_INFO_ENABLED	0
 
 lane_marker_detect::lane_marker_detect() {
 	xSigma = 3;
@@ -389,7 +390,10 @@ void lane_marker_detect::show_windows(cv::Mat *hough_image, cv::Mat *canny_image
 
 void lane_marker_detect::set_up()
 {
+#if DEBUG_INFO_ENABLED
 	cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
+#endif // DEBUG_INFO_ENABLED
+
 #if hsv
 
 
@@ -401,7 +405,7 @@ void lane_marker_detect::set_up()
 
 	iLowV = 115; //128
 	iHighV = 255;
-
+  #if DEBUG_INFO_ENABLED
 	//Create trackbars in "Control" window
 	cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
 	cv::createTrackbar("HighH", "Control", &iHighH, 179);
@@ -411,14 +415,16 @@ void lane_marker_detect::set_up()
 
 	cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
 	cv::createTrackbar("HighV", "Control", &iHighV, 255);
+  #endif // DEBUG_INFO_ENABLED
 #endif
 
 #if binarize
 	threshL = 193;
 	threshH = 255;
-
+  #if DEBUG_INFO_ENABLED
 	cv::createTrackbar("threshL", "Control", &threshL, 255); //Value (0 - 255)
 	cv::createTrackbar("threshH", "Control", &threshH, 255);
+  #endif // DEBUG_INFO_ENABLED
 #endif
 
 

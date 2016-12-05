@@ -3,7 +3,17 @@
 #include "helper_opencv.hpp"
 #include "lane_marker_detect.hpp"
 
+
+#define DEBUG_INFO_ENABLED	0
+
 /*** Trackbar variables ***/
+
+
+static int edgeDetectionGreyThreshold = 48;
+static const int edgeDetectionGreyThresholdMax = 255;
+
+
+#if DEBUG_INFO_ENABLED
 static int greyThreshold = 40;
 static const int greyThresholdMax = 255;
 static string trackbarThresholdName = "Grey Threshold Trackbar";
@@ -12,8 +22,6 @@ static int greyDiffInterval = 9;
 static const int greyDiffMax = 50;
 static const string trackbarGreyDiffName = "Grey Diff Trackbar";
 
-static int edgeDetectionGreyThreshold = 48;
-static const int edgeDetectionGreyThresholdMax = 255;
 static string trackbarEdgeDetectionThresholdName = "Edge Detection Grey Threshold Trackbar";
 
 static int inputImageVehicleCount = 1;
@@ -36,9 +44,11 @@ static const string windowName_CroppedImage = "Cropped Image";
 static const string windowName_prevGrey = "Prev Grey Image";
 static const string windowName_currGrey = "Current Grey Image";
 static const string windowName_SimpleColors = "Simple Colors";
+#endif // DEBUG_INFO_ENABLED
 
 void detect_initDebugInfo(void)
 {
+#if DEBUG_INFO_ENABLED
 	namedWindow(windowName_greyThreshold);
 	moveWindow(windowName_greyThreshold, 100, 100);
 	helper_trackbarSimple(trackbarThresholdName, windowName_greyThreshold, &greyThreshold, greyThresholdMax);
@@ -81,6 +91,7 @@ void detect_initDebugInfo(void)
 
  	namedWindow(windowName_currGrey);
  	moveWindow(windowName_currGrey, 100, 100);
+#endif // DEBUG_INFO_ENABLED
 }
 
 static VideoCapture capture;
@@ -212,7 +223,9 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 
 	lane_marker_detect LD; //new
 	LD.set_up(); //new
+#if DEBUG_INFO_ENABLED
 	setMouseCallback(windowName_InputImage, clickAndDrag, &capture);
+#endif // DEBUG_INFO_ENABLED
 
 	while (1)
 	{
