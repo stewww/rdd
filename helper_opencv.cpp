@@ -61,7 +61,6 @@ void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage
 	vector<RotatedRect> minRect( contours.size() );
 	vector<RotatedRect> minEllipse( contours.size() );
 
-	//const int vehicleHeight =
 
 	for(unsigned int i = 0; i < contours.size(); i++ )
 	{
