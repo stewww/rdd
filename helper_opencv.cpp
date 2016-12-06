@@ -1,4 +1,5 @@
 #include "helper_opencv.hpp"
+#include "lane_marker_detect.hpp"
 #include <stdlib.h>
 
 static FILE * outputFile;
@@ -61,6 +62,7 @@ void helper_drawEllipseAroundVehicleContours(Mat * inputImage, Mat * outputImage
 	vector<RotatedRect> minRect( contours.size() );
 	vector<RotatedRect> minEllipse( contours.size() );
 
+	//const int vehicleHeight =
 
 	for(unsigned int i = 0; i < contours.size(); i++ )
 	{
@@ -330,12 +332,10 @@ Rect rectFormed;
 int vehicleNumber = 1;
 double prevTimestamp = 0;
 
-void recordVehicleLocation(string fileName, int x, int y, int vehicleNum, double timestamp)
+void recordVehicleLocation(string fileName, Point vehicleLocation, int laneNum, int vehicleNum, double timestamp)
 {
-	printf("we made it");
 	if(!mouseMove && rectSelected)
 	{
-		printf("4\n");
 		outputFile = fopen(fileName.c_str(), "a");
 		if(outputFile == NULL)
 		{
@@ -345,49 +345,54 @@ void recordVehicleLocation(string fileName, int x, int y, int vehicleNum, double
 			vehicleNumber++;
 		else
 			vehicleNumber = 1;
-		fprintf(outputFile, "Timestamp: %fms - Vehicle #%d (%d,%d) \n", timestamp, vehicleNumber, x, y);
+		fprintf(outputFile, "Timestamp: %fms - Vehicle #%d Lane #%i (%i,%i) \n", timestamp, vehicleNumber, laneNum, vehicleLocation.x, vehicleLocation.y);
 		rectSelected = false;
 		prevTimestamp = timestamp;
 		fclose(outputFile);
 	}
 
-	if(mouseMove)
-	{
-		//rectangle()
-	}
 }
 
 void clickAndDrag(int event, int x, int y, int flags, void* param)
 {
-	VideoCapture *frame = (VideoCapture*)param;
+	debugParams * dp = (debugParams*)param;
+	VideoCapture *frame = (VideoCapture*)dp->frame;
+	vector<lane_c> *lane = (vector<lane_c>*)dp->lanes;
 
 	if(event == CV_EVENT_LBUTTONDOWN && !mouseDrag)
 	{
 		initialPoint = Point(x,y);
 		mouseDrag = true;
-		printf("1\n");
 	}
 	if(event == CV_EVENT_MOUSEMOVE && mouseDrag)
 	{
 		endPoint = Point(x,y);
 		mouseMove = true;
-		printf("2\n");
 	}
 	if(event == CV_EVENT_LBUTTONUP && mouseDrag)
 	{
 		int xpos;
 		int ypos;
+		int laneNum;
 
 		rectFormed = Rect(initialPoint, endPoint);
-		xpos = rectFormed.x + rectFormed.width/2;
-		ypos = rectFormed.y + rectFormed.height/2;
+		Point vehiclePoint;
 
+		vehiclePoint.x = rectFormed.x + rectFormed.width/2;
+		vehiclePoint.y = rectFormed.y + rectFormed.height/2;
+
+		for(unsigned int idx = 0; idx < lane->size(); idx++)
+		{
+			if(lane->at(idx).in_lane(vehiclePoint))
+			{
+				laneNum = lane->at(idx).get_number();
+			}
+		}
 		mouseDrag = false;
 		mouseMove = false;
 		rectSelected = true;
 
-		printf("3\n");
-		recordVehicleLocation("/home/james/Documents/test.txt", xpos, ypos, vehicleNumber, frame->get(CV_CAP_PROP_POS_MSEC));
+		recordVehicleLocation("/home/james/Documents/test.txt", vehiclePoint, laneNum, vehicleNumber, frame->get(CV_CAP_PROP_POS_MSEC));
 	}
 
 }

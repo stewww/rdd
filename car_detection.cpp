@@ -4,7 +4,7 @@
 #include "lane_marker_detect.hpp"
 
 
-#define DEBUG_INFO_ENABLED	0
+#define DEBUG_INFO_ENABLED	1
 
 /*** Trackbar variables ***/
 
@@ -224,7 +224,10 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 	lane_marker_detect LD; //new
 	LD.set_up(); //new
 #if DEBUG_INFO_ENABLED
-	setMouseCallback(windowName_InputImage, clickAndDrag, &capture);
+	debugParams dp;
+	dp.frame = &capture;
+	dp.lanes = &LANE_;
+	setMouseCallback(windowName_InputImage, clickAndDrag, (void*)&dp); //&capture
 #endif // DEBUG_INFO_ENABLED
 
 	while (1)
@@ -312,7 +315,7 @@ int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles)
 			helper_drawEllipseAroundVehicleContours(&temp1, &vehicleContoursAndEllipses, &LANE_, 1,10,300,400, vehicles);
 			//drawBoundingContours(temp1, contoursAndEllipse);
 			// Show Images
-			//imshow(windowName_InputImage, simpleColorImage);
+			imshow(windowName_InputImage, simpleColorImage);
 //			imshow(windowName_InputImageUp, inputImageUp);
 //			imshow(windowName_InputImageDown, inputImageDown);
 //			imshow(windowName_InputImageLeft, inputImageLeft);

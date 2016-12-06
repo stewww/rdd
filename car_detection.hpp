@@ -14,13 +14,10 @@ typedef struct {
 
 void detect_initDebugInfo(void);
 #if 0
-// Uses a motion detection algorithm to track vehicles
 int detect_vehicles_greydiff(vector<Vehicle_Information_S> * vehicles);
 #endif // 0
-// Uses an edge detection algorithm to track vehicles
 int detect_vehicles_edgeDetection(vector<Vehicle_Information_S> * vehicles);
 #if 0
-// Uses an HSV based filter to track vehicles
 int detect_vehicles_colorFilter(vector<Vehicle_Information_S> * vehicles);
 #endif // 0
 
