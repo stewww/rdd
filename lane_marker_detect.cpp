@@ -13,6 +13,9 @@
 #define binarize 1
 #define DEBUG_INFO_ENABLED	0
 
+/*
+ *	Default constructor
+ */
 lane_marker_detect::lane_marker_detect() {
 	xSigma = 3;
 	ySigma = 3;
@@ -73,7 +76,7 @@ cv::Mat lane_marker_detect::sobel_edge(cv::Mat gaussian_image) {
  *	Use canny edge algorithm to get edges
  *	cv::Canny(image, image, upperThresh, lowerThresh);
  *	upperThresh > lowerThresh
- *	lowerThresh may be around 1/3 upperThresh. Depends on use case
+ *	lowerThresh may be around 1/3 upperThresh. Depends on use cases
  */
 cv::Mat lane_marker_detect::canny_edge(cv::Mat gaussian_image) {
 
@@ -84,9 +87,9 @@ cv::Mat lane_marker_detect::canny_edge(cv::Mat gaussian_image) {
 }
 
 /*
- *	Probabilistic hough transform
- *	Use this instead of standard hough transform because we can choose to filter out min/max lengths
- *	cv::HoughLinesP(canny_image, lines, rho, theta, threshold, minLineLength, minLineLength);
+ *	Hough transform
+ *	Transform canny edged frame to line segments
+ *	Detected lines will be put in a vector in form of rho and theta values
  */
 cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat original, std::vector<lane_c> * lane_) {
 	//std::cout<<"Start Hough"<<std::endl;
@@ -94,11 +97,20 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 	static int l1 = 0, l2 = 0, l3 = 0, l4 = 0, l5 = 0, l6 = 0;
 	int threshold = 60;
 
+	/*
+	 *	Probabilistic Hough transform
+	 *	Use this instead of standard hough transform to filter out min/max lengths
+	 *	cv::HoughLines(canny_image, lines, rho, theta, threshold, minLineLength, minLineLength);
+	 */
 #if houghp
 	std::vector<cv::Vec4i> lines;
 	cv::HoughLinesP(canny_image, lines, rho, theta, threshold, minLineLength, maxLineGap);
 #endif
 
+	/*
+	 *	The code below is for standard Hough Line Transform
+	 *	Extract line segments from Hough Transform
+	 */
 #if stdhough
 	//std::vector<cv::Vec2f> lines;
 	lines.empty();
@@ -106,11 +118,6 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 
 #endif
 
-	/*	line(hough, cv::Point(x, y), cv::Point(x, y), cv::Scalar(a, b, c), 3, lineType)
-	 *	x, y = 2d array. ex: x = [int][int]
-	 *	a, b, c = RGB values 0-255
-	 *	lineType = type of line that is to be used. See http://docs.opencv.org/3.1.0/d0/de1/group__core.html#gaf076ef45de481ac96e0ab3dc2c29a777
-	 */
 	cv::Point2d pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8, pt9, pt10, pt11, pt12;
 	cv::Scalar line_color1 = cv::Scalar(255, 0, 0); 	// BGR color Blue
 	cv::Scalar line_color2 = cv::Scalar(0, 255, 0); 	// Green
@@ -134,12 +141,17 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 #endif
 
 
-		// The code below is for standard Hough Line Transform
-		// Extract line segments from Hough Transform
 #if stdhough
+
+		/* 
+		 *	Rho and theta values from Hough tranform algorithm are filtered to be classified into certain 
+		 *	lines group based on the theta angle and sign of rho
+		 *	filtered values will be fed into line functions to define line in y = mx + b format
+		 *	The results are put into line_ array for lane defining process
+		 */
 		double rho = lines[i][0], theta = lines[i][1];
 		if(rho < 0){
-			if (theta > 1.64 && theta < 1.66){
+			if (theta > 1.658 && theta < 1.745){
 				//std::cout<<"6: "<<theta<<" "<<rho<<std::endl;
 				cir_queue_push(&rho6[0], rho);
 				cir_queue_push(&theta6[0], theta);
@@ -157,8 +169,8 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 
 				line_[5].def_equation(&temp1, &temp2);
 
-				pt11.y = 15;
-				pt12.y = 31;
+				pt11.y = 45;
+				pt12.y = 65;
 				pt11.x = line_[5].find_x(pt11.y);
 				pt12.x = line_[5].find_x(pt12.y);
 				l6 = rho;
@@ -182,7 +194,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 
 				line_[4].def_equation(&temp1, &temp2);
 
-				pt9.y = 44;
+				pt9.y = 40;
 				pt10.y = 70;
 				pt9.x = line_[4].find_x(pt9.y);
 				pt10.x = line_[4].find_x(pt10.y);
@@ -259,7 +271,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 				l2 = rho;
 				line_cnt += 1;
 			}
-			else if(theta < 1.5 && theta > 1.43){
+			else if(theta < 1.483 && theta > 1.396){
 				//std::cout<<"1: "<<theta<<" "<<rho<<std::endl;
 				cir_queue_push(&rho1[0], rho);
 				cir_queue_push(&theta1[0], theta);
@@ -285,6 +297,10 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 #endif
 	}
 
+	/*	
+	 *	The lines acquired from the previous step are used to define lanes
+	 *	Defined lanes will be put into a lane vector which is available to vehicle tracking part
+	 */
 	if(l1 && l2){
 		cv::Point2d center;
 		lane_c temp;
@@ -294,7 +310,7 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		//(*lane_).push_back(temp);
 		(*lane_)[0].def_lane(center, 1, &line_[0], &line_[1]);
 		//std::cout<<get_number((*lane_)[0])<<std::endl;
-		cv:: putText(hough, text1, (*lane_)[0].get_center_point(), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1.0, line_color1, 2);
+		cv:: putText(hough, text1, (*lane_)[0].get_center_point(), cv::FONT_HERSHEY_SIMPLEX, 1.0, line_color1, 2);
 		lane_cnt += 1;
 	}
 	if(l2 && l3){
@@ -347,6 +363,9 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 		lane_cnt += 1;
 	}
 
+	/*
+	 *	Flush out old confirmation info of lines after every 15 frames
+	 */
 	if((frame_counter % 15) == 0){
 		l1 = 0; l2 = 0; l3 = 0; l4 = 0; l5 = 0; l6 = 0;
 		//(*lane_).empty();
@@ -355,12 +374,17 @@ cv::Mat lane_marker_detect::hough_transform(cv::Mat canny_image, cv::Mat origina
 
 	//std::cout<<"Detected "<<lane_cnt<<" lanes!"<<std::endl;
 
-	cv::line(hough, pt1, pt2, line_color1, line_thickness, cv::LINE_AA);
-	cv::line(hough, pt3, pt4, line_color2, line_thickness, cv::LINE_AA);
-	cv::line(hough, pt5, pt6, line_color3, line_thickness, cv::LINE_AA);
-	cv::line(hough, pt7, pt8, line_color4, line_thickness, cv::LINE_AA);
-	cv::line(hough, pt9, pt10, line_color5, line_thickness, cv::LINE_AA);
-	cv::line(hough, pt11, pt12, line_color6, line_thickness, cv::LINE_AA);
+	/*	line(hough, cv::Point(x, y), cv::Point(x, y), cv::Scalar(a, b, c), 3, lineType)
+	 *	x, y = 2d array. ex: x = [int][int]
+	 *	a, b, c = RGB values 0-255
+	 *	lineType = type of line that is to be used. See http://docs.opencv.org/3.1.0/d0/de1/group__core.html#gaf076ef45de481ac96e0ab3dc2c29a777
+	 */
+	cv::line(hough, pt1, pt2, line_color1, line_thickness, 16); //cv_LINE_AA
+	cv::line(hough, pt3, pt4, line_color2, line_thickness, 16);
+	cv::line(hough, pt5, pt6, line_color3, line_thickness, 16);
+	cv::line(hough, pt7, pt8, line_color4, line_thickness, 16);
+	cv::line(hough, pt9, pt10, line_color5, line_thickness, 16);
+	cv::line(hough, pt11, pt12, line_color6, line_thickness, 16);
 
 	//std::cout<<"End Hough"<<std::endl;
 	return hough;
@@ -388,6 +412,10 @@ void lane_marker_detect::show_windows(cv::Mat *hough_image, cv::Mat *canny_image
 
 }
 
+/*
+ *	This function is to initialize threshold and filter value
+ *	and create display windows and control bar
+ */
 void lane_marker_detect::set_up()
 {
 #if DEBUG_INFO_ENABLED
@@ -430,7 +458,14 @@ void lane_marker_detect::set_up()
 
 }
 
-
+/*
+ *	This function applies all filters then synthesizes the results and outputs a Mat 
+ *	which is combined with the output of the vehicle tracking part to display
+ *	This function follow this sequence:
+ *	video frame --> grey scale --> hsv filter --> erode & dilate (reduce noise) -->
+ *	binarize --> gaussian blur --> canny edge --> Hough tranform
+ *	This function returns a Mat
+ */
 cv::Mat lane_marker_detect::detect(cv::Mat *vid_frame, std::vector<lane_c> * lane_) {
 
 	//int width = 700, height = 350;
@@ -449,6 +484,9 @@ cv::Mat lane_marker_detect::detect(cv::Mat *vid_frame, std::vector<lane_c> * lan
 	cv::cvtColor(original, gray, cv::COLOR_BGR2GRAY);
 	gray.copyTo(gaussian_image);
 
+/*
+ *	HSV color filter
+ */
 #if hsv
 	cvtColor(original, gaussian_image, cv::COLOR_BGR2HSV); //Convert frame from BGR to HSV
 
@@ -472,6 +510,11 @@ cv::Mat lane_marker_detect::detect(cv::Mat *vid_frame, std::vector<lane_c> * lan
 	return hough_image;
 }
 
+/*
+ *	This function provides a simple cropping method
+ *	Input: upper left point and lower right point of the cropping frame
+ *	Output: cropped frame
+ */
 void lane_marker_detect::cropImage(cv::Mat * inputImage, cv::Mat * croppedImage, cv::Point one, cv::Point two)
 {
 	cv::Rect rect;
@@ -485,6 +528,11 @@ void lane_marker_detect::cropImage(cv::Mat * inputImage, cv::Mat * croppedImage,
 	*croppedImage = (*inputImage)(box);
 }
 
+/*
+	Function to calculate the average of the circular queue
+	Input: pointer to an array of double, size of the array
+	Output: the average value
+*/
 double lane_marker_detect::cir_queue_average(double * vp, int size)
 {
 	double avg = 0, total = 0;
@@ -494,6 +542,11 @@ double lane_marker_detect::cir_queue_average(double * vp, int size)
 	avg = total/size;
 	return avg;
 }
+
+/*
+	Function to put a value into the circular queue
+	Input: pointer to the array of double, value to be put into the queue
+*/
 void lane_marker_detect::cir_queue_push(double * vp, double value)
 {
 	int pos = frame_counter % 5;
